@@ -593,6 +593,150 @@
 }
 
   </style>
+  <style id="riceflow-ready-section-ui-fix">
+    /* Strictly scoped UI styling for READY reservations under Ready filter/tab & Ready details modal only */
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-queue-badge {
+      background-color: #FAF5FF !important;
+      border: 1px solid #E9D5FF !important;
+      color: #6B21A8 !important;
+      border-radius: 0.75rem !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-queue-badge .queue-num-badge {
+      color: #6B21A8 !important;
+      font-weight: 700 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .customer-name-text {
+      font-weight: 700 !important;
+      color: #111827 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-phone-text {
+      color: #374151 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-qty-badge {
+      background-color: #F3F4F6 !important;
+      border: 1px solid #D1D5DB !important;
+      color: #111827 !important;
+      border-radius: 0.75rem !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-status-pill {
+      background-color: #ECFDF5 !important;
+      border: 1px solid #6EE7B7 !important;
+      color: #065F46 !important;
+      border-radius: 9999px !important;
+      font-weight: 600 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-status-dot {
+      width: 12px !important;
+      height: 12px !important;
+      border-radius: 9999px !important;
+      background-color: #22C55E !important;
+      border: 1.25px solid #14532D !important;
+      display: inline-block !important;
+      flex-shrink: 0 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-allocated-text {
+      color: #047857 !important;
+      font-weight: 700 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready .ready-eta-text {
+      color: #111827 !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready td:nth-child(5) .btn-ready-manage-reservation {
+      position: relative !important;
+      box-sizing: border-box !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex: 0 1 200px !important;
+      min-width: 170px !important;
+      width: 200px !important;
+      max-width: 200px !important;
+      height: 42px !important;
+      min-height: 42px !important;
+      padding: 0 16px !important;
+      border-radius: 12px !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      font-size: 13.5px !important;
+      line-height: 1.2 !important;
+      font-weight: 600 !important;
+      letter-spacing: 0 !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      cursor: pointer !important;
+      color: #FFFFFF !important;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 40%, rgba(255, 255, 255, 0) 50%),
+        linear-gradient(180deg, #2EC420 0%, #22AD17 38%, #199410 72%, #137C0B 100%) !important;
+      background-color: #199410 !important;
+      border: 1px solid #157F0D !important;
+      border-top-color: #46D438 !important;
+      border-bottom-color: #0F6308 !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(21, 128, 61, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22) !important;
+      transition: background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, transform 150ms ease !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready td:nth-child(5) .btn-ready-manage-reservation * {
+      color: #FFFFFF !important;
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready td:nth-child(5) .btn-ready-manage-reservation:hover:not(:disabled) {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(255, 255, 255, 0) 50%),
+        linear-gradient(180deg, #26B31A 0%, #1C9B12 38%, #15820D 72%, #0E6907 100%) !important;
+      background-color: #15820D !important;
+      border-color: #0F6909 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 3px 6px rgba(20, 128, 13, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+      transform: translateY(-1px);
+    }
+    #admin-layout-container #reservation-queue-table tbody tr.res-row-ready td:nth-child(5) .btn-ready-manage-reservation:focus-visible {
+      outline: 3px solid #15803D !important;
+      outline-offset: 2px !important;
+    }
+    #details-modal-box .ready-payment-proof-card {
+      background: #F8FAFC;
+      border-color: #D8E2EA;
+    }
+    #details-modal-box .ready-payment-proof-card .payment-proof-content {
+      padding: 12px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      align-items: stretch;
+    }
+    #details-modal-box .ready-payment-proof-card .payment-proof-image-frame {
+      min-height: 200px;
+      max-height: 320px;
+      padding: 12px;
+      background: #F1F5F9;
+      border-color: #D8E2EA;
+    }
+    #details-modal-box .ready-payment-proof-card #review-payment-proof-image {
+      display: block;
+      max-width: 100%;
+      max-height: 290px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      margin: auto;
+    }
+    #details-modal-box .ready-payment-proof-card .payment-proof-metadata {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      text-align: left;
+      border-top: 1px solid #E2E8F0;
+    }
+    #details-modal-box .ready-payment-proof-card .payment-proof-metadata p {
+      padding: 8px 10px;
+      background: #F8FAFC;
+      border-radius: 8px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    #details-modal-box .ready-payment-proof-card #btn-zoom-proof {
+      align-self: flex-start;
+    }
+  </style>
 </head>
 <body class="bg-[#F8F9FA] min-h-screen text-gray-800 antialiased">
   <div id="auth-guard-loader" class="fixed inset-0 bg-[#F5F5F5] z-[99999] flex flex-col items-center justify-center font-sans">
@@ -2118,6 +2262,8 @@
           const isPaymentVerification = !isCancelled && !isFulfillment && !isReady && !isReuploadWaiting && !order.paymentVerified && isReservationInPaymentVerification(order);
           const isWaiting = !isCancelled && !isFulfillment && !isReady && !isPaymentVerification && !isReuploadWaiting && isReservationInWaitingForStock(order);
 
+          const isReadyTabRow = isReady && statusFilter === 'ready';
+
           // Highlight position #1 for waiting reservations as Next
           const isNext = isWaiting && pos === 1;
 
@@ -2152,6 +2298,12 @@
             queuePosHtml = `
               <span class="inline-flex items-center justify-center min-w-[42px] px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 shadow-2xs shrink-0">
                 <span class="queue-num-badge font-bold text-amber-800 dark:text-amber-200 text-[14px] sm:text-[15px]">#${pos}</span>
+              </span>
+            `;
+          } else if (pos && isReadyTabRow) {
+            queuePosHtml = `
+              <span class="ready-queue-badge inline-flex items-center justify-center min-w-[42px] px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 shadow-2xs shrink-0">
+                <span class="queue-num-badge font-bold text-purple-800 text-[14px] sm:text-[15px]">#${pos}</span>
               </span>
             `;
           } else if (pos && isReady) {
@@ -2321,6 +2473,24 @@
                 </p>
               </div>
             `;
+          } else if (isReadyTabRow) {
+            const allocatedQty = Number(order.allocatedQuantity || qty);
+            statusBadge = `
+              <div class="flex flex-col items-start gap-1 text-left leading-tight">
+                <span class="ready-status-pill inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-[13px] sm:text-[14px] font-semibold shrink-0 whitespace-nowrap leading-tight">
+                  <span class="ready-status-dot" aria-hidden="true"></span>
+                  <span>Ready</span>
+                </span>
+                <p class="ready-allocated-text text-[13px] sm:text-[14px] text-emerald-800 font-bold leading-tight">Allocated: ${allocatedQty} Sacks</p>
+                <p class="ready-eta-text text-[13px] sm:text-[14px] font-normal text-gray-900 leading-tight">${order.deliveryOption === 'pickup' ? 'Est. Pickup' : 'Est. Delivery'}: ${getEstimatedArrivalDate(order)}</p>
+              </div>
+            `;
+            dateAndAvailabilityHtml = `
+              <div class="space-y-1 text-left leading-tight">
+                <p class="font-normal text-gray-950 dark:text-white text-[15px] sm:text-[16px] leading-tight">${dateStr}</p>
+                <p class="text-[13px] sm:text-[14px] text-gray-700 dark:text-gray-300 font-normal leading-tight">${timeStr}</p>
+              </div>
+            `;
           } else if (isReady) {
             const allocatedQty = Number(order.allocatedQuantity || qty);
             statusBadge = `
@@ -2375,22 +2545,23 @@
 
           let actionButtonHtml = '';
 
-          if (isReady) {
+          if (isReadyTabRow) {
             actionButtonHtml = `
-              <div class="flex items-center justify-center gap-2">
-                <button 
-                  data-id="${order.id}"
-                  class="btn-view-details h-9 px-3.5 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 text-xs sm:text-[13px] font-semibold rounded-xl transition-all duration-150 cursor-pointer whitespace-nowrap text-center shadow-2xs"
-                >
-                  Manage
-                </button>
-                <button 
-                  data-id="${order.id}"
-                  class="btn-process-order h-9 px-3.5 bg-[#1E6C02] hover:bg-[#145001] dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold rounded-xl transition-all duration-150 cursor-pointer shadow-xs text-xs sm:text-[13px] whitespace-nowrap text-center"
-                >
-                  Process
-                </button>
-              </div>
+              <button 
+                data-id="${order.id}"
+                class="btn-view-details btn-ready-manage-reservation h-9 inline-flex items-center justify-center font-semibold rounded-xl px-4.5 py-2 cursor-pointer text-[14px] sm:text-[14.5px] whitespace-nowrap text-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Manage Reservation
+              </button>
+            `;
+          } else if (isReady) {
+            actionButtonHtml = `
+              <button 
+                data-id="${order.id}"
+                class="btn-view-details btn-manage-reservation h-9 inline-flex items-center justify-center font-semibold rounded-xl px-4.5 py-2 cursor-pointer text-[14px] sm:text-[14.5px] whitespace-nowrap text-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Manage Reservation
+              </button>
             `;
           } else if (isFulfillment) {
             actionButtonHtml = `
@@ -2439,21 +2610,21 @@
             `;
           }
 
-          actionButtonHtml = `<div class="flex items-center justify-center gap-2 flex-nowrap">${actionButtonHtml}<button type="button" data-audit-id="${order.id}" class="btn-reservation-audit inline-flex items-center justify-center h-9 px-3 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-xs font-bold rounded-xl cursor-pointer whitespace-nowrap shrink-0 transition-colors shadow-2xs" title="View reservation history and timeline">Audit Log</button></div>`;
+          actionButtonHtml = `<div class="flex flex-wrap items-center justify-center gap-1.5">${actionButtonHtml}<button type="button" data-audit-id="${order.id}" class="btn-reservation-audit inline-flex items-center justify-center h-9 px-2.5 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-xs font-bold rounded-lg cursor-pointer whitespace-nowrap" title="View reservation history and timeline">Audit Log</button></div>`;
 
           const altRowClass = idx % 2 === 0 ? 'res-row-even' : 'res-row-odd';
 
           return `
-            <tr id="reservation-row-${order.id}" class="${altRowClass} ${rowBgClass}">
+            <tr id="reservation-row-${order.id}" class="${altRowClass} ${rowBgClass}${isReadyTabRow ? ' res-row-ready' : ''}">
               <!-- Customer + Queue Badge -->
               <td class="py-3 px-3 align-middle">
                 <div class="flex items-center gap-3">
                   ${queuePosHtml}
                   <div class="min-w-0 space-y-1">
-                    <p class="customer-name-text font-semibold text-black dark:text-white text-[15px] sm:text-[16px] leading-snug truncate" title="${customerName}">
+                    <p class="customer-name-text ${isReadyTabRow ? 'font-bold' : 'font-semibold'} text-black dark:text-white text-[15px] sm:text-[16px] leading-snug truncate" title="${customerName}">
                       ${customerName}
                     </p>
-                    <p class="text-[13px] sm:text-[14px] text-gray-700 dark:text-gray-300 font-normal truncate leading-tight">
+                    <p class="${isReadyTabRow ? 'ready-phone-text text-gray-700' : 'text-gray-700 dark:text-gray-300'} text-[13px] sm:text-[14px] font-normal truncate leading-tight">
                       ${order.phone || 'No Phone'}
                     </p>
                   </div>
@@ -2477,7 +2648,7 @@
 
               <!-- Quantity -->
               <td class="py-3 px-2 text-center align-middle">
-                <span class="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-300 dark:border-slate-700 text-gray-950 dark:text-white font-semibold text-[15px] sm:text-[16px]">
+                <span class="${isReadyTabRow ? 'ready-qty-badge' : ''} inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-300 dark:border-slate-700 text-gray-950 dark:text-white font-semibold text-[15px] sm:text-[16px]">
                   ${qty} <span class="text-[13px] sm:text-[14px] font-normal text-gray-700 dark:text-gray-300 ml-1.5">Sack${qty > 1 ? 's' : ''}</span>
                 </span>
               </td>
@@ -3075,7 +3246,7 @@
         if (isCancelledModal) {
           statusBadge = `<span class="px-3 py-1 rounded-full bg-red-50 border border-red-300 text-red-800 text-xs sm:text-[13px] font-bold uppercase">🔴 Cancelled</span>`;
         } else if (isReadyModal) {
-          statusBadge = `<span class="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs sm:text-[13px] font-bold uppercase">🟢 Ready</span>`;
+          statusBadge = `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs sm:text-[13px] font-bold uppercase"><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-900 shrink-0" aria-hidden="true"></span><span>Ready</span></span>`;
         } else if (isReuploadWaitingModal) {
           statusBadge = `<span class="px-3 py-1 rounded-full ${isExp ? 'bg-red-50 border border-red-300 text-red-800' : 'bg-amber-50 border border-amber-300 text-amber-900'} text-xs sm:text-[13px] font-bold uppercase">${isExp ? '⚠️ Window Expired' : '⏱️ Proof Rejected — Awaiting Re-upload'}</span>`;
         } else if (isPaymentVerificationModal) {
@@ -3301,6 +3472,200 @@
 
             <div class="flex flex-wrap gap-2.5 pt-5 border-t border-gray-200 justify-end mt-6 text-left">
               <button id="btn-details-close-bottom" class="px-5 py-3 text-sm sm:text-base font-bold text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors">Close</button>
+            </div>
+          `;
+        } else if (isReadyModal) {
+          let readyQueuePos = dynamicPos || (order && typeof order.queuePosition === 'number' && order.queuePosition > 0 ? order.queuePosition : (order && order.queuePosition && !isNaN(Number(order.queuePosition)) && Number(order.queuePosition) > 0 ? Number(order.queuePosition) : null));
+          if (!readyQueuePos) {
+            const pId = String(order.items?.[0]?.product?.id ?? order.items?.[0]?.productId ?? order.productId ?? '').trim();
+            let readyList = orders.filter(o => {
+              const st = String(o.status || '').toLowerCase().replace(/_/g, '-').trim();
+              return st === 'ready-for-processing' || st === 'ready';
+            });
+            if (pId) {
+              readyList = readyList.filter(o => {
+                const oPid = String(o.items?.[0]?.product?.id ?? o.items?.[0]?.productId ?? o.productId ?? '').trim();
+                return oPid === pId;
+              });
+            }
+            readyList.sort((a, b) => {
+              const tA = new Date(a.createdAt || a.dateCreated || a.date || 0).getTime();
+              const tB = new Date(b.createdAt || b.dateCreated || b.date || 0).getTime();
+              if (tA !== tB) return tA - tB;
+              return String(a.id || '').localeCompare(String(b.id || ''));
+            });
+            const rIdx = readyList.findIndex(o => String(o.id || '').toLowerCase().replace(/^#/, '') === String(order.id || '').toLowerCase().replace(/^#/, ''));
+            readyQueuePos = rIdx !== -1 ? (rIdx + 1) : 1;
+          }
+
+          box.innerHTML = `
+            <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-6 text-left">
+              <div>
+                <h3 class="text-xl sm:text-2xl font-semibold text-gray-950 flex items-center gap-2">🟢 Manage Reservation #${order.id}</h3>
+                <p class="text-sm sm:text-base text-gray-700 font-medium mt-1">Ready for fulfillment processing. Review reservation and payment details.</p>
+              </div>
+              <button id="close-details-modal-btn" class="text-gray-700 hover:text-black bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors cursor-pointer" title="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-5 h-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            <!-- 2-COLUMN READY RESERVATION LAYOUT -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5 text-left items-start">
+              
+              <!-- LEFT COLUMN: 1. Queue Standing -> 2. Reserved Variety -> 3. Customer Profile -->
+              <div class="space-y-4 min-w-0">
+                <!-- 1. Queue Standing -->
+                <div class="bg-purple-50 border border-purple-200 p-6 rounded-2xl flex justify-between items-center text-left">
+                  <div>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 tracking-wide mb-1">Queue Standing</h4>
+                    <p class="text-[32px] font-semibold text-purple-700 leading-none">#${readyQueuePos}</p>
+                  </div>
+                  <div class="text-right">
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 tracking-wide mb-1">Status</h4>
+                    <div>${statusBadge}</div>
+                    ${modalAllocatedQty > 0 ? `
+                      <p class="text-xs sm:text-sm font-bold text-emerald-900 mt-1.5">Allocated: ${modalAllocatedQty} / ${pQty} Sacks</p>
+                      ${modalWaitingQty > 0 ? `<p class="text-xs font-bold text-amber-900 mt-0.5">Waiting: ${modalWaitingQty} Sacks</p>` : ''}
+                    ` : `
+                      <p class="text-xs sm:text-sm font-bold text-emerald-900 mt-1.5">Allocated: ${pQty} / ${pQty} Sacks</p>
+                    `}
+                  </div>
+                </div>
+
+                <!-- 2. Reserved Variety -->
+                <div class="bg-gray-50/70 p-6 border border-gray-200 rounded-2xl">
+                  <h4 class="text-base font-semibold text-gray-950 tracking-wide mb-4 flex items-center gap-1.5">
+                    <span>🌾</span> Reserved Variety
+                  </h4>
+                  <div class="space-y-4">${itemsHtml}</div>
+                </div>
+
+                <!-- 3. Customer Profile -->
+                <div class="bg-gray-50/70 p-6 border border-gray-200 rounded-2xl">
+                  <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-base font-semibold text-gray-950 tracking-wide flex items-center gap-1.5">
+                      <span>👤</span> Customer Profile
+                    </h4>
+                    ${modalAvatarUrl ? `
+                      <div class="w-11 h-11 rounded-full overflow-hidden border border-gray-300 shadow-2xs shrink-0">
+                        <img src="${modalAvatarUrl}" alt="${modalCustomerName}" class="w-full h-full object-cover" />
+                      </div>
+                    ` : `
+                      <div class="w-11 h-11 rounded-full bg-emerald-50 border border-emerald-300 flex items-center justify-center text-sm font-semibold text-[#1E6C02] shadow-2xs shrink-0 select-none">
+                        ${modalInitial}
+                      </div>
+                    `}
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm sm:text-base font-normal text-gray-950">
+                    <div>
+                      <p class="text-gray-700 font-medium text-xs sm:text-sm uppercase tracking-wide">Contact Name</p>
+                      <p class="font-semibold text-gray-950 text-base mt-1">${order.fullName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-700 font-medium text-xs sm:text-sm uppercase tracking-wide">Contact Number</p>
+                      <p class="font-semibold text-gray-950 text-base mt-1">${order.phone || 'N/A'}</p>
+                    </div>
+                    <div class="sm:col-span-2 border-t border-gray-200 pt-3.5">
+                      <p class="text-gray-700 font-medium text-xs sm:text-sm uppercase tracking-wide">Fulfillment Option</p>
+                      <p class="font-semibold text-gray-950 text-base mt-1 uppercase">${order.deliveryOption === 'delivery' ? 'Home Delivery' : 'Store Pick-up'}</p>
+                    </div>
+                    ${order.deliveryOption === 'delivery' ? `
+                    <div class="sm:col-span-2 border-t border-gray-200 pt-3.5 pb-1">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-gray-700 font-medium text-xs sm:text-sm uppercase tracking-wide">Saved Delivery Address</p>
+                        ${resMapLinkHtml}
+                      </div>
+                      <p class="font-normal text-gray-950 text-base mt-2 leading-relaxed">${resDeliveryAddress}</p>
+                      ${resAddressBreakdownHtml}
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <!-- RIGHT COLUMN: 1. Payment Summary -> 2. Payment Proof -->
+              <div class="space-y-4 min-w-0">
+                <!-- 1. Payment Summary -->
+                <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-inner text-sm sm:text-base font-normal text-gray-950 space-y-4">
+                  <div class="flex items-center justify-between border-b pb-3">
+                    <h4 class="text-base font-semibold text-gray-950 tracking-wide flex items-center gap-1.5">
+                      <span>📊</span> Payment Summary
+                    </h4>
+                    <span class="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs uppercase">
+                      ${order.paymentVerified ? 'Verified' : 'Payment Approved'}
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm pb-1">
+                    <div class="rounded-xl bg-gray-50 border border-gray-200 p-3">
+                      <p class="text-xs font-medium uppercase tracking-wide text-gray-600 mb-0.5">Payment Method</p>
+                      <p class="font-bold text-gray-950 text-sm sm:text-base">${order.paymentMethod || 'GCash'}</p>
+                    </div>
+                    <div class="rounded-xl bg-gray-50 border border-gray-200 p-3">
+                      <p class="text-xs font-medium uppercase tracking-wide text-gray-600 mb-0.5">Payment Option</p>
+                      <p class="font-bold text-gray-950 text-sm sm:text-base">${isFullPayment ? 'Full Payment' : '30% Down Payment'}</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 text-sm pt-1">
+                    <div class="flex justify-between items-center border-b pb-2">
+                      <span class="text-gray-700 font-medium">Items Subtotal:</span>
+                      <span class="font-bold text-gray-950">₱${resSubtotal.toLocaleString()}.00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2">
+                      <span class="text-gray-700 font-medium">Delivery Fee:</span>
+                      <span class="font-bold text-gray-950">${order.deliveryOption === 'pickup' ? '₱0.00 (Store Pickup)' : `₱${resDeliveryFee.toLocaleString()}.00${order.matchedDeliveryArea ? ` (${order.matchedDeliveryArea})` : ''}`}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2.5">
+                      <span class="text-gray-800 font-bold">Total Bill:</span>
+                      <span class="font-black text-gray-950 text-base sm:text-lg">₱${totalVal.toLocaleString()}.00</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b pb-2.5">
+                      <span class="text-gray-800 font-bold">Amount Paid:</span>
+                      <span class="font-black text-emerald-800 text-base sm:text-lg">₱${paidVal.toLocaleString()}.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-0.5">
+                      <span class="text-gray-800 font-bold">Balance Due on Delivery / Pickup:</span>
+                      <span class="font-black text-gray-950 text-base sm:text-lg">₱${remainVal.toLocaleString()}.00</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Payment Proof -->
+                <div class="ready-payment-proof-card bg-gray-50/70 p-6 border border-gray-200 rounded-2xl space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-base font-semibold text-gray-950 tracking-wide flex items-center gap-1.5">
+                      <span>📱</span> Payment Proof
+                    </h4>
+                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold uppercase">Payment Verified</span>
+                  </div>
+
+                  <div class="payment-proof-content border border-gray-200 bg-white rounded-xl p-4 flex flex-col items-center justify-center space-y-4">
+                    <div class="payment-proof-image-frame w-full border border-gray-200 rounded-xl overflow-hidden shadow-xs bg-gray-50 flex items-center justify-center">
+                      <img id="review-payment-proof-image" src="${order.paymentProofUrl || order.paymentProofDataUrl || order.paymentProof || '../gcash_demo.jpg'}" alt="Payment Proof" class="max-h-56 w-auto object-contain cursor-zoom-in transition-all hover:scale-102" />
+                    </div>
+                    <div class="payment-proof-metadata text-xs sm:text-sm text-gray-800 font-semibold text-center space-y-1.5 w-full border-t border-gray-100 pt-3">
+                      <p><span class="font-bold text-gray-950">Payment Amount:</span> <span class="text-emerald-800 font-black">₱${paidVal.toLocaleString()}.00</span></p>
+                      <p><span class="font-bold text-gray-950">Uploaded Date:</span> ${order.paymentUploadedAt || (order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A')}</p>
+                      <p><span class="font-bold text-gray-950">Verification Status:</span> <span class="text-emerald-800 font-black">Verified & Approved</span></p>
+                    </div>
+                    <button id="btn-zoom-proof" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-950 text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer">
+                      <span>🔍</span> View Full Image
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2.5 pt-5 border-t border-gray-200 justify-between mt-6 text-left">
+              <div>
+                <button id="btn-details-close-bottom" class="px-5 py-3 text-sm sm:text-base font-bold text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors">Close</button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button id="btn-det-action-cancel" class="px-5 py-3 text-sm sm:text-base font-bold bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-xl cursor-pointer transition-colors shadow-2xs">Cancel Reservation</button>
+                <button id="btn-det-action-process" class="px-6 py-3 text-sm sm:text-base font-black bg-[#1E6C02] text-white hover:bg-[#145001] rounded-xl cursor-pointer transition-colors shadow-xs">Process Order</button>
+              </div>
             </div>
           `;
         } else {
@@ -3814,7 +4179,7 @@ if (freshEst && freshEst !== 'Waiting for Restock' && freshEst !== 'Not yet sche
           if (lbModal && targetContainer) {
             targetContainer.innerHTML = `
               <div class="w-full flex items-center justify-center p-2 animate-in fade-in zoom-in duration-200">
-                <img src="${order.paymentProofUrl || order.paymentProofDataUrl || '../gcash_demo.jpg'}" alt="GCash Receipt Full" class="max-h-[80vh] max-w-full object-contain rounded-xl shadow-lg border border-gray-150" />
+                <img src="${order.paymentProofUrl || order.paymentProofDataUrl || order.paymentProof || '../gcash_demo.jpg'}" alt="GCash Receipt Full" class="max-h-[80vh] max-w-full object-contain rounded-xl shadow-lg border border-gray-150" />
               </div>
             `;
             lbModal.classList.remove('hidden');

@@ -56,7 +56,7 @@
               </div>
               <div>
                 <h3 class="text-base font-black text-[#111827] dark:text-white mb-1">Phone</h3>
-                <p id="info-phone" class="text-sm text-[#111827] dark:text-white font-bold select-all leading-relaxed"></p>
+                <p id="info-phone" class="text-sm text-[#111827] dark:text-white font-bold select-all leading-relaxed">+63 912 345 6789</p>
               </div>
             </div>
 
@@ -68,7 +68,8 @@
               </div>
               <div>
                 <h3 class="text-base font-black text-[#111827] dark:text-white mb-1">Email</h3>
-                <div id="info-email-list" class="space-y-0.5"></div>
+                <a href="mailto:info@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">info@auroralocalrice.com</a>
+                <a href="mailto:support@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">support@auroralocalrice.com</a>
               </div>
             </div>
 
@@ -80,7 +81,9 @@
               </div>
               <div>
                 <h3 class="text-base font-black text-[#111827] dark:text-white mb-1">Address</h3>
-                <p id="info-address" class="text-sm text-[#111827] dark:text-white font-bold leading-relaxed whitespace-pre-wrap"></p>
+                <p id="info-address" class="text-sm text-[#111827] dark:text-white font-bold leading-relaxed whitespace-pre-wrap">
+                  Aurora, Zamboanga del Sur, Philippines
+                </p>
               </div>
             </div>
 
@@ -92,7 +95,9 @@
               </div>
               <div>
                 <h3 class="text-base font-black text-[#111827] dark:text-white mb-1">Business Hours</h3>
-                <p id="info-hours" class="text-sm text-[#111827] dark:text-white font-bold leading-relaxed whitespace-pre-wrap"></p>
+                <p id="info-hours" class="text-sm text-[#111827] dark:text-white font-bold leading-relaxed whitespace-pre-wrap">
+                  8:00 AM - 5:00 PM (Monday - Saturday)
+                </p>
               </div>
             </div>
 
@@ -273,83 +278,35 @@
         }
       }
 
-      function renderGetInTouchDetails() {
-        const settings = getStoreSettings();
-
-        const phoneEl = document.getElementById('info-phone');
-        if (phoneEl) {
-          phoneEl.textContent = String(settings.contactNumber || '').trim() || 'Not specified';
-        }
-
-        const emailListEl = document.getElementById('info-email-list');
-        if (emailListEl) {
-          const rawEmails = String(settings.contactEmail || '')
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean);
-          emailListEl.innerHTML = '';
-          if (rawEmails.length > 0) {
-            rawEmails.forEach(email => {
-              const link = document.createElement('a');
-              link.href = `mailto:${email}`;
-              link.className = 'text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all';
-              link.textContent = email;
-              emailListEl.appendChild(link);
-            });
-          } else {
-            const fallbackSpan = document.createElement('span');
-            fallbackSpan.className = 'text-sm text-[#111827] dark:text-white font-bold block leading-relaxed';
-            fallbackSpan.textContent = 'Not specified';
-            emailListEl.appendChild(fallbackSpan);
-          }
-        }
-
-        const addressEl = document.getElementById('info-address');
-        if (addressEl) {
-          addressEl.textContent = String(settings.storeAddress || '').trim() || 'Not specified';
-        }
-
-        const hoursEl = document.getElementById('info-hours');
-        if (hoursEl) {
-          const hrs = String(settings.businessHours || '').trim();
-          const days = String(settings.operatingDays || '').trim();
-          if (hrs && days) {
-            hoursEl.textContent = hrs.toLowerCase().includes(days.toLowerCase()) ? hrs : `${hrs} (${days})`;
-          } else if (hrs) {
-            hoursEl.textContent = hrs;
-          } else if (days) {
-            hoursEl.textContent = days;
-          } else {
-            hoursEl.textContent = 'Not specified';
-          }
-        }
-
-        const fbContainer = document.getElementById('info-facebook-container');
-        const fbLink = document.getElementById('info-facebook');
-        if (fbContainer && fbLink) {
-          const rawFb = String(settings.facebookLink || '').trim();
-          if (rawFb) {
-            fbLink.href = /^https?:\/\//i.test(rawFb) ? rawFb : `https://${rawFb}`;
-            fbLink.textContent = rawFb;
-            fbContainer.classList.remove('hidden');
-          } else {
-            fbContainer.classList.add('hidden');
-          }
-        }
+      // Load dynamic store settings
+      const settings = getStoreSettings();
+      
+      const phoneEl = document.getElementById('info-phone');
+      if (phoneEl) {
+        phoneEl.textContent = settings.contactNumber;
       }
 
-      renderGetInTouchDetails();
+      const addressEl = document.getElementById('info-address');
+      if (addressEl) {
+        addressEl.textContent = settings.storeAddress;
+      }
 
-      window.addEventListener('aurora-sync-event', (e) => {
-        if (!e || !e.detail || !e.detail.key || e.detail.key === 'aurora-store-settings' || String(e.detail.key).startsWith('settings-')) {
-          renderGetInTouchDetails();
+      const hoursEl = document.getElementById('info-hours');
+      if (hoursEl) {
+        hoursEl.textContent = settings.businessHours || 'None';
+      }
+
+      const fbContainer = document.getElementById('info-facebook-container');
+      const fbLink = document.getElementById('info-facebook');
+      if (fbContainer && fbLink) {
+        if (settings.facebookLink) {
+          fbLink.href = settings.facebookLink;
+          fbLink.textContent = settings.facebookLink;
+          fbContainer.classList.remove('hidden');
+        } else {
+          fbContainer.classList.add('hidden');
         }
-      });
-      window.addEventListener('storage', (e) => {
-        if (!e || !e.key || e.key === 'aurora-store-settings' || e.key.startsWith('settings-')) {
-          renderGetInTouchDetails();
-        }
-      });
+      }
 
       const form = document.getElementById('form-contact');
       const submitBtn = document.getElementById('btn-submit');

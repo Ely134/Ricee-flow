@@ -418,49 +418,27 @@
       if (!targetSpace) return;
 
       // Load initial settings
-      const initialSettings = getStoreSettings();
+      const settings = getStoreSettings();
 
-      let storeName = initialSettings.storeName;
-      let description = initialSettings.description;
-      let contactNumber = initialSettings.contactNumber;
-      let contactEmail = initialSettings.contactEmail;
-      let storeAddress = initialSettings.storeAddress;
-      let facebookLink = initialSettings.facebookLink;
-      let businessHours = initialSettings.businessHours;
-      let operatingDays = initialSettings.operatingDays;
-      let logoBase64 = initialSettings.logo;
-      let bannerBase64 = initialSettings.banner;
-      let gcashName = initialSettings.gcashName;
-      let gcashNumber = initialSettings.gcashNumber;
-      let gcashQrBase64 = initialSettings.gcashQr;
-      let deliveryMinimumSettings = JSON.parse(JSON.stringify(initialSettings.deliveryMinimumSettings || DEFAULT_DELIVERY_MINIMUM_SETTINGS));
-      let deliveryFeeSettings = JSON.parse(JSON.stringify(initialSettings.deliveryFeeSettings || DEFAULT_DELIVERY_FEE_SETTINGS));
+      let storeName = settings.storeName;
+      let description = settings.description;
+      let contactNumber = settings.contactNumber;
+      let storeAddress = settings.storeAddress;
+      let facebookLink = settings.facebookLink;
+      let businessHours = settings.businessHours;
+      let logoBase64 = settings.logo;
+      let bannerBase64 = settings.banner;
+      let gcashName = settings.gcashName;
+      let gcashNumber = settings.gcashNumber;
+      let gcashQrBase64 = settings.gcashQr;
+      let deliveryMinimumSettings = JSON.parse(JSON.stringify(settings.deliveryMinimumSettings || DEFAULT_DELIVERY_MINIMUM_SETTINGS));
+      let deliveryFeeSettings = JSON.parse(JSON.stringify(settings.deliveryFeeSettings || DEFAULT_DELIVERY_FEE_SETTINGS));
       let editingFeeRuleId = null;
       let editingLocationRuleId = null;
       let selectedLogoFile = null;
       let selectedBannerFile = null;
       let selectedGcashQrFile = null;
-      let hasUnsavedEdits = false;
-      let isSavingStorefront = false;
-      let isSavingContact = false;
-      let isSavingGcash = false;
       const fallbackQrSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'><rect width='100%' height='100%' fill='%23f9fafb' rx='12'/><rect x='8' y='8' width='134' height='134' fill='none' stroke='%23e5e7eb' stroke-width='2' stroke-dasharray='6,4' rx='8'/><text x='50%' y='45%' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='10' font-weight='bold' fill='%239ca3af'>No GCash QR</text><text x='50%' y='60%' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='10' font-weight='bold' fill='%239ca3af'>Code Available</text></svg>`;
-
-      function escapeAttr(val) {
-        return String(val ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-      }
-
-      function escapeHtml(val) {
-        return String(val ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-      }
 
       // Reusable confirmation modal functions
       const confModal = document.getElementById('confirmation-modal');
@@ -521,14 +499,8 @@
         const inpContactPhone = document.getElementById('inp-contact-phone');
         if (inpContactPhone) contactNumber = inpContactPhone.value.trim();
 
-        const inpContactEmail = document.getElementById('inp-contact-email');
-        if (inpContactEmail) contactEmail = inpContactEmail.value.trim();
-
         const inpBusinessHours = document.getElementById('inp-business-hours');
         if (inpBusinessHours) businessHours = inpBusinessHours.value.trim();
-
-        const inpOperatingDays = document.getElementById('inp-operating-days');
-        if (inpOperatingDays) operatingDays = inpOperatingDays.value.trim();
 
         const inpFacebookLink = document.getElementById('inp-facebook-link');
         if (inpFacebookLink) facebookLink = inpFacebookLink.value.trim();
@@ -1041,10 +1013,7 @@
       }
 
       function renderSettingsPanel() {
-        const currentTargetSpace = document.getElementById('admin-main-content');
-        if (!currentTargetSpace) return;
-
-        currentTargetSpace.innerHTML = `
+        targetSpace.innerHTML = `
           <div class="w-full space-y-10 pb-20">
             
             <!-- Storefront Customization Section -->
@@ -1067,7 +1036,7 @@
                     <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block mb-1">Store Logo Image</label>
                     <div class="flex items-center gap-5 mt-2">
                       <div class="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center border-2 border-gray-200 shadow-sm shrink-0 bg-gray-50">
-                        <img id="img-logo-current" src="${escapeAttr(logoBase64)}" alt="Logo" class="w-full h-full object-cover" />
+                        <img id="img-logo-current" src="${logoBase64}" alt="Logo" class="w-full h-full object-cover" />
                       </div>
                       <div class="space-y-2.5">
                         <input type="file" id="inp-store-logo-file" class="hidden" accept="image/png, image/jpeg, image/webp" />
@@ -1084,7 +1053,7 @@
                     <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block mb-1">Homepage Hero Banner</label>
                     <div class="flex items-center gap-5 mt-2">
                       <div class="w-32 h-20 rounded-xl overflow-hidden flex items-center justify-center border-2 border-gray-200 shadow-sm shrink-0 bg-gray-50">
-                        <img id="img-banner-current" src="${escapeAttr(bannerBase64)}" alt="Banner" class="w-full h-full object-cover" />
+                        <img id="img-banner-current" src="${bannerBase64}" alt="Banner" class="w-full h-full object-cover" />
                       </div>
                       <div class="space-y-2.5">
                         <input type="file" id="inp-store-banner-file" class="hidden" accept="image/png, image/jpeg, image/webp" />
@@ -1100,13 +1069,13 @@
                 <!-- Store Name -->
                 <div class="space-y-3">
                   <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Store Brand Name</label>
-                  <input type="text" id="inp-store-name" value="${escapeAttr(storeName)}" placeholder="e.g. Aurora Rice Store" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  <input type="text" id="inp-store-name" value="${storeName}" placeholder="e.g. Aurora Rice Store" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                 </div>
 
                 <!-- Store Description -->
                 <div class="space-y-3">
                   <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Store Introduction / About Description</label>
-                  <textarea id="inp-store-desc" rows="4" placeholder="Describe your store and value propositions..." class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${escapeHtml(description)}</textarea>
+                  <textarea id="inp-store-desc" rows="4" placeholder="Describe your store and value propositions..." class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${description}</textarea>
                 </div>
               </div>
 
@@ -1128,36 +1097,24 @@
               <div class="space-y-6 text-black">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-3">
-                    <label for="inp-contact-phone" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Phone Number</label>
-                    <input type="text" id="inp-contact-phone" value="${escapeAttr(contactNumber)}" placeholder="e.g. +63 912 345 6789" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Official Mobile Contact Point</label>
+                    <input type="text" id="inp-contact-phone" value="${contactNumber}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
 
                   <div class="space-y-3">
-                    <label for="inp-contact-email" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Email Address</label>
-                    <input type="email" id="inp-contact-email" value="${escapeAttr(contactEmail)}" placeholder="e.g. info@auroralocalrice.com" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div class="space-y-3">
-                    <label for="inp-business-hours" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Hours <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
-                    <input type="text" id="inp-business-hours" value="${escapeAttr(businessHours)}" placeholder="e.g. 8:00 AM - 5:00 PM" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
-                  </div>
-
-                  <div class="space-y-3">
-                    <label for="inp-operating-days" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Operating Days <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
-                    <input type="text" id="inp-operating-days" value="${escapeAttr(operatingDays)}" placeholder="e.g. Monday - Saturday" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Hours <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
+                    <input type="text" id="inp-business-hours" value="${businessHours}" placeholder="e.g. 8:00 AM - 5:00 PM (Mon - Sat)" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
                 </div>
 
                 <div class="space-y-3">
-                  <label for="inp-facebook-link" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Facebook Page Link <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
-                  <input type="url" id="inp-facebook-link" value="${escapeAttr(facebookLink)}" placeholder="e.g. https://facebook.com/auroralocalrice" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Facebook Page Link <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
+                  <input type="url" id="inp-facebook-link" value="${facebookLink}" placeholder="e.g. https://facebook.com/auroralocalrice" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                 </div>
 
                 <div class="space-y-3">
-                  <label for="inp-store-address" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Address</label>
-                  <textarea id="inp-store-address" rows="3" placeholder="Enter business store or supplier address..." class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${escapeHtml(storeAddress)}</textarea>
+                  <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Physical Store / Supplier Address</label>
+                  <textarea id="inp-store-address" rows="3" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${storeAddress}</textarea>
                 </div>
               </div>
 
@@ -1180,11 +1137,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-3">
                     <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">GCash Beneficiary Match Name</label>
-                    <input type="text" id="inp-gcash-name" value="${escapeAttr(gcashName)}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <input type="text" id="inp-gcash-name" value="${gcashName}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
                   <div class="space-y-3">
                     <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Registered GCash Number</label>
-                    <input type="text" id="inp-gcash-phone" value="${escapeAttr(gcashNumber)}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <input type="text" id="inp-gcash-phone" value="${gcashNumber}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
                 </div>
 
@@ -1544,144 +1501,106 @@
           });
         }
 
-        // Track edits to avoid overwriting active user typing on background Firestore sync
-        const activePanel = document.getElementById('admin-main-content');
-        if (activePanel) {
-          activePanel.querySelectorAll('input, textarea, select').forEach(el => {
-            el.addEventListener('input', () => { hasUnsavedEdits = true; });
-          });
-        }
-
         // Logo upload handlers
-        const btnUploadLogo = document.getElementById('btn-upload-logo');
-        const inpLogoFile = document.getElementById('inp-store-logo-file');
-        if (btnUploadLogo && inpLogoFile) {
-          btnUploadLogo.addEventListener('click', () => {
-            inpLogoFile.click();
-          });
+        document.getElementById('btn-upload-logo').addEventListener('click', () => {
+          document.getElementById('inp-store-logo-file').click();
+        });
 
-          inpLogoFile.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            e.target.value = '';
-            if (!file) return;
+        document.getElementById('inp-store-logo-file').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-              showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
-              return;
-            }
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+          if (!allowedTypes.includes(file.type)) {
+            showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
+            return;
+          }
 
-            if (file.size > 5 * 1024 * 1024) {
-              showToast('Logo file size exceeds the 5MB limit!', 'error');
-              return;
-            }
+          if (file.size > 5 * 1024 * 1024) {
+            showToast('Logo file size exceeds the 5MB limit!', 'error');
+            return;
+          }
 
-            selectedLogoFile = file;
-            hasUnsavedEdits = true;
-            const logoImg = document.getElementById('img-logo-current');
-            try {
-              logoBase64 = URL.createObjectURL(file);
-              if (logoImg) logoImg.src = logoBase64;
-            } catch (err) {
-              const reader = new FileReader();
-              reader.onload = (evt) => {
-                logoBase64 = evt.target.result;
-                if (logoImg) logoImg.src = logoBase64;
-              };
-              reader.readAsDataURL(file);
-            }
-            showToast('Store logo selected. Click "Save Changes" to apply.', 'success');
-          });
-        }
+          selectedLogoFile = file;
+          try {
+            logoBase64 = URL.createObjectURL(file);
+          } catch (err) {
+            const reader = new FileReader();
+            reader.onload = (evt) => { logoBase64 = evt.target.result; };
+            reader.readAsDataURL(file);
+          }
+          const logoImg = document.getElementById('img-logo-current');
+          if (logoImg) logoImg.src = logoBase64;
+          showToast('Store logo selected. Click "Save Changes" to apply.', 'success');
+        });
 
         // Banner upload handlers
-        const btnUploadBanner = document.getElementById('btn-upload-banner');
-        const inpBannerFile = document.getElementById('inp-store-banner-file');
-        if (btnUploadBanner && inpBannerFile) {
-          btnUploadBanner.addEventListener('click', () => {
-            inpBannerFile.click();
-          });
+        document.getElementById('btn-upload-banner').addEventListener('click', () => {
+          document.getElementById('inp-store-banner-file').click();
+        });
 
-          inpBannerFile.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            e.target.value = '';
-            if (!file) return;
+        document.getElementById('inp-store-banner-file').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-              showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
-              return;
-            }
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+          if (!allowedTypes.includes(file.type)) {
+            showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
+            return;
+          }
 
-            if (file.size > 10 * 1024 * 1024) {
-              showToast('Banner file size exceeds the 10MB limit!', 'error');
-              return;
-            }
+          if (file.size > 10 * 1024 * 1024) {
+            showToast('Banner file size exceeds the 10MB limit!', 'error');
+            return;
+          }
 
-            selectedBannerFile = file;
-            hasUnsavedEdits = true;
-            const bannerImg = document.getElementById('img-banner-current');
-            try {
-              bannerBase64 = URL.createObjectURL(file);
-              if (bannerImg) bannerImg.src = bannerBase64;
-            } catch (err) {
-              const reader = new FileReader();
-              reader.onload = (evt) => {
-                bannerBase64 = evt.target.result;
-                if (bannerImg) bannerImg.src = bannerBase64;
-              };
-              reader.readAsDataURL(file);
-            }
-            showToast('Hero banner selected. Click "Save Changes" to apply.', 'success');
-          });
-        }
+          selectedBannerFile = file;
+          try {
+            bannerBase64 = URL.createObjectURL(file);
+          } catch (err) {
+            const reader = new FileReader();
+            reader.onload = (evt) => { bannerBase64 = evt.target.result; };
+            reader.readAsDataURL(file);
+          }
+          const bannerImg = document.getElementById('img-banner-current');
+          if (bannerImg) bannerImg.src = bannerBase64;
+          showToast('Hero banner selected. Click "Save Changes" to apply.', 'success');
+        });
 
         // GCash QR upload handlers
-        const btnUploadGcash = document.getElementById('btn-upload-gcash');
-        const inpGcashFile = document.getElementById('inp-gcash-qr-file');
-        if (btnUploadGcash && inpGcashFile) {
-          btnUploadGcash.addEventListener('click', () => {
-            inpGcashFile.click();
-          });
+        document.getElementById('btn-upload-gcash').addEventListener('click', () => {
+          document.getElementById('inp-gcash-qr-file').click();
+        });
 
-          inpGcashFile.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            e.target.value = '';
-            if (!file) return;
+        document.getElementById('inp-gcash-qr-file').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-              showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
-              return;
-            }
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+          if (!allowedTypes.includes(file.type)) {
+            showToast('Invalid file format! Please upload JPG, PNG, or WEBP.', 'error');
+            return;
+          }
 
-            if (file.size > 5 * 1024 * 1024) {
-              showToast('QR Code file size exceeds the 5MB limit!', 'error');
-              return;
-            }
+          if (file.size > 5 * 1024 * 1024) {
+            showToast('QR Code file size exceeds the 5MB limit!', 'error');
+            return;
+          }
 
-            selectedGcashQrFile = file;
-            hasUnsavedEdits = true;
-            const qrImg = document.getElementById('img-gcash-qr');
-            try {
-              gcashQrBase64 = URL.createObjectURL(file);
-              if (qrImg) qrImg.src = gcashQrBase64;
-              showToast('GCash QR selected. Click "Save Changes" to apply.', 'success');
-              saveCurrentInputStates();
-              renderSettingsPanel();
-            } catch (err) {
-              const reader = new FileReader();
-              reader.onload = (evt) => {
-                gcashQrBase64 = evt.target.result;
-                if (qrImg) qrImg.src = gcashQrBase64;
-                showToast('GCash QR selected. Click "Save Changes" to apply.', 'success');
-                saveCurrentInputStates();
-                renderSettingsPanel();
-              };
-              reader.readAsDataURL(file);
-            }
-          });
-        }
+          selectedGcashQrFile = file;
+          try {
+            gcashQrBase64 = URL.createObjectURL(file);
+          } catch (err) {
+            const reader = new FileReader();
+            reader.onload = (evt) => { gcashQrBase64 = evt.target.result; };
+            reader.readAsDataURL(file);
+          }
+          const qrImg = document.getElementById('img-gcash-qr');
+          if (qrImg) qrImg.src = gcashQrBase64;
+          showToast('GCash QR selected. Click "Save Changes" to apply.', 'success');
+          saveCurrentInputStates();
+          renderSettingsPanel();
+        });
 
         // Reset GCash QR Code (falls back to placeholder)
         const btnResetGcash = document.getElementById('btn-reset-gcash');
@@ -1689,9 +1608,7 @@
           btnResetGcash.addEventListener('click', () => {
             selectedGcashQrFile = null;
             gcashQrBase64 = '';
-            const qrImg = document.getElementById('img-gcash-qr');
-            if (qrImg) qrImg.src = fallbackQrSvg;
-            hasUnsavedEdits = true;
+            document.getElementById('img-gcash-qr').src = fallbackQrSvg;
             showToast('GCash QR cleared successfully!');
             saveCurrentInputStates();
             renderSettingsPanel();
@@ -1702,7 +1619,6 @@
         const btnSaveStorefront = document.getElementById('btn-save-storefront');
         if (btnSaveStorefront) {
           btnSaveStorefront.addEventListener('click', () => {
-            if (isSavingStorefront) return;
             const sName = document.getElementById('inp-store-name').value.trim();
             const sDesc = document.getElementById('inp-store-desc').value.trim();
 
@@ -1711,29 +1627,19 @@
               return;
             }
 
-            const hasNewImageSelected = Boolean(selectedLogoFile || selectedBannerFile);
             showConfirmationModal({
               title: 'Save Changes',
-              message: hasNewImageSelected
-                ? 'Are you sure you want to save these changes?<br><br>These updates will immediately be uploaded to Firebase Storage and applied to the storefront.'
-                : 'Are you sure you want to save these changes?<br><br>These updates will immediately be saved and applied to the storefront.',
+              message: 'Are you sure you want to save these changes?<br><br>These updates will immediately be uploaded to Firebase Storage and applied to the storefront.',
               cancelText: 'No, Cancel',
               confirmText: 'Yes, Save Changes',
               onConfirm: async () => {
-                if (isSavingStorefront) return;
-                isSavingStorefront = true;
                 const btnConfirm = document.getElementById('btn-confirm-modal');
                 if (btnConfirm) {
                   btnConfirm.disabled = true;
-                  btnConfirm.textContent = hasNewImageSelected ? 'Uploading...' : 'Saving...';
+                  btnConfirm.textContent = 'Uploading...';
                 }
-                btnSaveStorefront.disabled = true;
 
                 try {
-                  if ((selectedLogoFile || selectedBannerFile) && !storage) {
-                    throw new Error('Firebase Storage is not initialized.');
-                  }
-
                   // Upload Logo to Firebase Storage if newly selected
                   if (selectedLogoFile) {
                     const timestamp = Date.now();
@@ -1774,9 +1680,6 @@
                     selectedBannerFile = null;
                   }
 
-                  // Preserve other unsaved form inputs before saving/re-rendering panel
-                  saveCurrentInputStates();
-
                   // Save to localStorage
                   localStorage.setItem('settings-store-name', sName);
                   localStorage.setItem('settings-store-description', sDesc);
@@ -1786,21 +1689,15 @@
                   storeName = sName;
                   description = sDesc;
 
-                  // Update Firestore document storeSettings/main while preserving existing fields
+                  // Update Firestore document storeSettings/main
                   const currentSettings = getStoreSettings();
-                  const updatedSettings = {
-                    ...currentSettings,
-                    id: 'main',
-                    storeName: sName,
-                    description: sDesc,
-                    logo: logoBase64,
-                    banner: bannerBase64,
-                    updatedAt: new Date().toISOString()
-                  };
+                  currentSettings.storeName = sName;
+                  currentSettings.description = sDesc;
+                  currentSettings.logo = logoBase64;
+                  currentSettings.banner = bannerBase64;
 
-                  await saveFirestoreDoc('storeSettings', 'main', updatedSettings);
-                  localStorage.setItem('aurora-store-settings', JSON.stringify([updatedSettings]));
-                  hasUnsavedEdits = false;
+                  await saveFirestoreDoc('storeSettings', 'main', currentSettings);
+                  localStorage.setItem('aurora-store-settings', JSON.stringify([currentSettings]));
                   if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'aurora-store-settings' } }));
                   }
@@ -1808,14 +1705,13 @@
                   addActivityLog('System', 'Updated Storefront branding and images');
                   showToast('Storefront updated and synced successfully.', 'success');
 
-                  // Re-render panel cleanly inside the live #admin-main-content container
+                  // Re-render admin sidebar layout and panel
+                  renderAdminLayout('settings');
                   renderSettingsPanel();
                 } catch (uploadErr) {
                   console.error('[SETTINGS] Error uploading store assets:', uploadErr);
                   showToast('Failed to upload store image to Firebase Storage: ' + (uploadErr.message || uploadErr), 'error');
                 } finally {
-                  isSavingStorefront = false;
-                  btnSaveStorefront.disabled = false;
                   if (btnConfirm) {
                     btnConfirm.disabled = false;
                     btnConfirm.textContent = 'Yes, Save Changes';
@@ -1830,26 +1726,14 @@
         const btnSaveContact = document.getElementById('btn-save-contact');
         if (btnSaveContact) {
           btnSaveContact.addEventListener('click', () => {
-            if (isSavingContact) return;
             const sPhone = document.getElementById('inp-contact-phone').value.trim();
-            const sEmail = document.getElementById('inp-contact-email').value.trim();
             const sHours = document.getElementById('inp-business-hours').value.trim();
-            const sDays = document.getElementById('inp-operating-days').value.trim();
             const sFb = document.getElementById('inp-facebook-link').value.trim();
             const sAddr = document.getElementById('inp-store-address').value.trim();
 
             if (!sPhone || !sAddr) {
-              showToast('Phone Number and Business Address are required!', 'error');
+              showToast('Official Contact Point and Physical Store Address are required!', 'error');
               return;
-            }
-
-            if (sEmail) {
-              const emailTokens = sEmail.split(',').map(item => item.trim()).filter(Boolean);
-              const allValidEmails = emailTokens.length > 0 && emailTokens.every(item => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
-              if (!allValidEmails) {
-                showToast('Please enter a valid Email Address!', 'error');
-                return;
-              }
             }
 
             showConfirmationModal({
@@ -1857,69 +1741,21 @@
               message: 'Are you sure you want to save these changes?<br><br>These updates will immediately be applied to the storefront.',
               cancelText: 'No, Cancel',
               confirmText: 'Yes, Save Changes',
-              onConfirm: async () => {
-                if (isSavingContact) return;
-                isSavingContact = true;
-                const btnConfirm = document.getElementById('btn-confirm-modal');
-                if (btnConfirm) {
-                  btnConfirm.disabled = true;
-                  btnConfirm.textContent = 'Saving...';
-                }
-                btnSaveContact.disabled = true;
+              onConfirm: () => {
+                localStorage.setItem('settings-contact-number', sPhone);
+                localStorage.setItem('settings-business-hours', sHours);
+                localStorage.setItem('settings-facebook-link', sFb);
+                localStorage.setItem('settings-store-address', sAddr);
 
-                try {
-                  saveCurrentInputStates();
+                contactNumber = sPhone;
+                businessHours = sHours;
+                facebookLink = sFb;
+                storeAddress = sAddr;
 
-                  const currentSettings = getStoreSettings();
-                  const updatedSettings = {
-                    ...currentSettings,
-                    id: 'main',
-                    contactNumber: sPhone,
-                    contactEmail: sEmail,
-                    storeAddress: sAddr,
-                    businessHours: sHours,
-                    operatingDays: sDays,
-                    facebookLink: sFb,
-                    updatedAt: new Date().toISOString()
-                  };
+                addActivityLog('System', 'Updated storefront contact details and address');
+                showToast('Contact information updated successfully.', 'success');
 
-                  await saveFirestoreDoc('storeSettings', 'main', updatedSettings);
-
-                  localStorage.setItem('settings-contact-number', sPhone);
-                  localStorage.setItem('settings-contact-email', sEmail);
-                  localStorage.setItem('settings-business-hours', sHours);
-                  localStorage.setItem('settings-operating-days', sDays);
-                  localStorage.setItem('settings-facebook-link', sFb);
-                  localStorage.setItem('settings-store-address', sAddr);
-                  localStorage.setItem('aurora-store-settings', JSON.stringify([updatedSettings]));
-
-                  contactNumber = sPhone;
-                  contactEmail = sEmail;
-                  businessHours = sHours;
-                  operatingDays = sDays;
-                  facebookLink = sFb;
-                  storeAddress = sAddr;
-                  hasUnsavedEdits = false;
-
-                  if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'aurora-store-settings' } }));
-                  }
-
-                  addActivityLog('System', 'Updated storefront contact details and address');
-                  showToast('Contact information saved and synced successfully.', 'success');
-
-                  renderSettingsPanel();
-                } catch (err) {
-                  console.error('[SETTINGS] Error saving contact information:', err);
-                  showToast('Failed to save contact information: ' + (err.message || err), 'error');
-                } finally {
-                  isSavingContact = false;
-                  btnSaveContact.disabled = false;
-                  if (btnConfirm) {
-                    btnConfirm.disabled = false;
-                    btnConfirm.textContent = 'Yes, Save Changes';
-                  }
-                }
+                renderSettingsPanel();
               }
             });
           });
@@ -1929,7 +1765,6 @@
         const btnSaveGcash = document.getElementById('btn-save-gcash');
         if (btnSaveGcash) {
           btnSaveGcash.addEventListener('click', () => {
-            if (isSavingGcash) return;
             const gName = document.getElementById('inp-gcash-name').value.trim();
             const gPhone = document.getElementById('inp-gcash-phone').value.trim();
 
@@ -1944,20 +1779,13 @@
               cancelText: 'No, Cancel',
               confirmText: 'Yes, Save Changes',
               onConfirm: async () => {
-                if (isSavingGcash) return;
-                isSavingGcash = true;
                 const btnConfirm = document.getElementById('btn-confirm-modal');
                 if (btnConfirm) {
                   btnConfirm.disabled = true;
-                  btnConfirm.textContent = selectedGcashQrFile ? 'Uploading...' : 'Saving...';
+                  btnConfirm.textContent = 'Uploading...';
                 }
-                btnSaveGcash.disabled = true;
 
                 try {
-                  if (selectedGcashQrFile && !storage) {
-                    throw new Error('Firebase Storage is not initialized.');
-                  }
-
                   // Upload GCash QR Code to Firebase Storage if newly selected
                   if (selectedGcashQrFile) {
                     const timestamp = Date.now();
@@ -1978,8 +1806,6 @@
                     selectedGcashQrFile = null;
                   }
 
-                  saveCurrentInputStates();
-
                   localStorage.setItem('settings-gcash-name', gName);
                   localStorage.setItem('settings-gcash-number', gPhone);
                   localStorage.setItem('settings-gcash-qr', gcashQrBase64);
@@ -1988,18 +1814,12 @@
                   gcashNumber = gPhone;
 
                   const currentSettings = getStoreSettings();
-                  const updatedSettings = {
-                    ...currentSettings,
-                    id: 'main',
-                    gcashName: gName,
-                    gcashNumber: gPhone,
-                    gcashQr: gcashQrBase64,
-                    updatedAt: new Date().toISOString()
-                  };
+                  currentSettings.gcashName = gName;
+                  currentSettings.gcashNumber = gPhone;
+                  currentSettings.gcashQr = gcashQrBase64;
 
-                  await saveFirestoreDoc('storeSettings', 'main', updatedSettings);
-                  localStorage.setItem('aurora-store-settings', JSON.stringify([updatedSettings]));
-                  hasUnsavedEdits = false;
+                  await saveFirestoreDoc('storeSettings', 'main', currentSettings);
+                  localStorage.setItem('aurora-store-settings', JSON.stringify([currentSettings]));
                   if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'settings-gcash' } }));
                     window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'aurora-store-settings' } }));
@@ -2013,8 +1833,6 @@
                   console.error('[SETTINGS] Error uploading GCash QR code:', uploadErr);
                   showToast('Failed to upload GCash QR to Firebase Storage: ' + (uploadErr.message || uploadErr), 'error');
                 } finally {
-                  isSavingGcash = false;
-                  btnSaveGcash.disabled = false;
                   if (btnConfirm) {
                     btnConfirm.disabled = false;
                     btnConfirm.textContent = 'Yes, Save Changes';
@@ -2303,29 +2121,6 @@
 
       // Initial loading render Settings Panel
       renderSettingsPanel();
-
-      // Re-hydrate from authoritative remote storeSettings sync when user hasn't started editing
-      window.addEventListener('aurora-sync-event', (e) => {
-        if (e && e.detail && e.detail.remote && e.detail.key === 'aurora-store-settings' && !hasUnsavedEdits) {
-          const fresh = getStoreSettings();
-          storeName = fresh.storeName;
-          description = fresh.description;
-          contactNumber = fresh.contactNumber;
-          contactEmail = fresh.contactEmail;
-          storeAddress = fresh.storeAddress;
-          facebookLink = fresh.facebookLink;
-          businessHours = fresh.businessHours;
-          operatingDays = fresh.operatingDays;
-          logoBase64 = fresh.logo;
-          bannerBase64 = fresh.banner;
-          gcashName = fresh.gcashName;
-          gcashNumber = fresh.gcashNumber;
-          gcashQrBase64 = fresh.gcashQr;
-          deliveryMinimumSettings = JSON.parse(JSON.stringify(fresh.deliveryMinimumSettings || DEFAULT_DELIVERY_MINIMUM_SETTINGS));
-          deliveryFeeSettings = JSON.parse(JSON.stringify(fresh.deliveryFeeSettings || DEFAULT_DELIVERY_FEE_SETTINGS));
-          renderSettingsPanel();
-        }
-      });
     });
   </script>
 </body>
