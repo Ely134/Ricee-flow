@@ -1,0 +1,2463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Needs Guide | Aurora Rice Admin</title>
+  <script>
+    (function() {
+      try {
+        var d = document.documentElement;
+        d.classList.remove('dark');
+        d.style.colorScheme = 'light';
+        if (typeof localStorage !== 'undefined') { try { localStorage.removeItem('aurora-dark-mode'); } catch(_) {} }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+  <style id="riceflow-theme-init">
+    html { background-color: #F5F5F5; color-scheme: light; }
+    
+  
+    /* Clean Stock Needs 6-column layout: readable text, black figures, subtle row outlines */
+    #admin-layout-container .srg-clean-table {
+      min-width: 960px;
+      width: 100% !important;
+      border-collapse: separate !important;
+      border-spacing: 0 10px !important;
+      table-layout: auto;
+    }
+    #admin-layout-container .srg-clean-table thead th {
+      font-size: 13.5px !important;
+      line-height: 1.4 !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.02em !important;
+      padding-top: 12px !important;
+      padding-bottom: 12px !important;
+      color: #0F172A !important;
+      background: transparent !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+    }
+    
+
+    /* Rice Varieties Stock Breakdown Table: Rectangular Outline Around Complete Rows */
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row > td {
+      border-top: 1px solid #CBD5E1 !important;
+      border-bottom: 1px solid #CBD5E1 !important;
+      border-left: none !important;
+      border-right: none !important;
+      transition: border-color 0.15s ease;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row > td:first-child {
+      border-left: 1px solid #CBD5E1 !important;
+      border-top-left-radius: 10px !important;
+      border-bottom-left-radius: 10px !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row > td:last-child {
+      border-right: 1px solid #CBD5E1 !important;
+      border-top-right-radius: 10px !important;
+      border-bottom-right-radius: 10px !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row > td:first-child:last-child {
+      border: 1px solid #CBD5E1 !important;
+      border-radius: 10px !important;
+    }
+
+    
+
+    /* Clickable row pointer and transition */
+    #admin-layout-container .srg-clean-table tbody tr.srg-row {
+      cursor: pointer;
+      transition: filter 0.15s ease, border-color 0.15s ease;
+    }
+
+    /* Hover outline highlight & subtle brightness effect without interfering with stock gradients */
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:hover > td {
+      border-top-color: #94A3B8 !important;
+      border-bottom-color: #94A3B8 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:hover > td:first-child {
+      border-left-color: #94A3B8 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:hover > td:last-child {
+      border-right-color: #94A3B8 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:hover {
+      filter: brightness(0.985);
+    }
+
+    
+
+    /* Accessible keyboard focus support */
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:focus-visible > td {
+      border-top-color: #1E6C02 !important;
+      border-bottom-color: #1E6C02 !important;
+      outline: none !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:focus-visible > td:first-child {
+      border-left-color: #1E6C02 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-clean-table tbody tr.srg-row:focus-visible > td:last-child {
+      border-right-color: #1E6C02 !important;
+    }
+    
+
+    /* Soft Gradient Backgrounds for Each Row Based on Existing Stock Status */
+    /* 1. Out of Stock (Critical Red) */
+    html:not(.dark) #admin-layout-container .srg-row-critical,
+    html:not(.dark) #admin-layout-container .srg-row-critical > td {
+      background: linear-gradient(145deg, #FEF2F2 0%, #FFFFFF 60%, #FFF5F5 100%) !important;
+    }
+    
+
+    /* 2. Low Stock (Amber-Orange Warning) */
+    html:not(.dark) #admin-layout-container .srg-row-lowstock,
+    html:not(.dark) #admin-layout-container .srg-row-lowstock > td {
+      background: linear-gradient(145deg, #FFF7ED 0%, #FFFFFF 60%, #FFEDD5 100%) !important;
+    }
+    
+
+    /* 3. Stock Running Low (Amber Warning) */
+    html:not(.dark) #admin-layout-container .srg-row-warning,
+    html:not(.dark) #admin-layout-container .srg-row-warning > td {
+      background: linear-gradient(145deg, #FFFBEB 0%, #FFFFFF 60%, #FEF3C7 100%) !important;
+    }
+    
+
+    /* 4. Stock Available / Enough Stock (Healthy Emerald) */
+    html:not(.dark) #admin-layout-container .srg-row-healthy,
+    html:not(.dark) #admin-layout-container .srg-row-healthy > td {
+      background: linear-gradient(145deg, #ECFDF5 0%, #FFFFFF 60%, #D1FAE5 100%) !important;
+    }
+    
+
+    /* 5. No Recent Sales (Neutral Slate) */
+    html:not(.dark) #admin-layout-container .srg-row-neutral,
+    html:not(.dark) #admin-layout-container .srg-row-neutral > td {
+      background: linear-gradient(145deg, #F8FAFC 0%, #FFFFFF 60%, #F1F5F9 100%) !important;
+    }
+    
+    #admin-layout-container .srg-clean-table .srg-product-name {
+      font-size: 15.5px !important;
+      line-height: 1.35 !important;
+      font-weight: 600 !important;
+      color: #0F172A !important;
+    }
+    
+    #admin-layout-container .srg-clean-table .srg-variety-tag {
+      font-size: 13px !important;
+      line-height: 1.3 !important;
+      font-weight: 500 !important;
+      color: #475569 !important;
+    }
+    
+    #admin-layout-container .srg-clean-table .srg-stock-num {
+      font-size: 17px !important;
+      line-height: 1.4 !important;
+      font-weight: 600 !important;
+      font-variant-numeric: tabular-nums;
+    }
+    #admin-layout-container .srg-clean-table .srg-stock-num:not(.srg-num-critical):not(.srg-num-warning):not(.srg-num-healthy) {
+      color: #0F172A !important;
+    }
+    
+    #admin-layout-container .srg-clean-table .srg-unit-label {
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      color: #64748B !important;
+    }
+    
+    #admin-layout-container .srg-clean-table .srg-row td {
+      padding-top: 16px !important;
+      padding-bottom: 16px !important;
+      vertical-align: middle !important;
+    }
+    #admin-layout-container .srg-clean-table .srg-advice-text {
+      color: #0F172A !important;
+      font-size: 13.5px !important;
+      line-height: 1.45 !important;
+      font-weight: 400 !important;
+      margin: 0 !important;
+    }
+  </style>
+  <link rel="stylesheet" href="../src/styles/index.css">
+  <style id="auth-guard-style">body { visibility: hidden !important; }</style>
+  <style id="stock-replenishment-page-styles">
+    /* ==========================================================================
+       STOCK NEEDS GUIDE — APPROVED TYPOGRAPHY SYSTEM (INTER & SOURCE SANS 3)
+       - Inter: Page Title, Section Titles, Stat Numbers, Column Headers, Buttons
+       - Source Sans 3: Descriptions, Advice, Table Details, Labels, Units
+       - Solid Dark Navy/Black (#0F172A / #000000): In Light Mode (No Gray Text)
+       ========================================================================== */
+
+    /* Clean, easy-to-read stock table */
+    #admin-main-content .srg-clean-table { min-width: 960px; table-layout: auto; }
+    #admin-main-content .srg-clean-table tbody td { padding-top: 16px !important; padding-bottom: 16px !important; }
+
+    /* 1. Base typography */
+    body,
+    #admin-layout-container,
+    #admin-main-content {
+      font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* 2. Primary Font: Inter */
+    #admin-layout-container h1,
+    #admin-layout-container h2,
+    #admin-layout-container h3,
+    #admin-layout-container h4,
+    #admin-layout-container h5,
+    #admin-main-content h1,
+    #admin-main-content h2,
+    #admin-main-content h3,
+    #admin-main-content h4,
+    #admin-main-content h5,
+    .srg-title-inter,
+    table thead th,
+    table thead th *,
+    button,
+    .srg-back-btn,
+    .srg-card-num,
+    .srg-stock-num,
+    .srg-num-primary,
+    .srg-num-critical,
+    .srg-num-warning,
+    .srg-num-healthy,
+    #srg-period-badge-text,
+    .srg-badge-critical,
+    .srg-badge-warning,
+    .srg-badge-healthy,
+    .srg-badge-neutral {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+
+    /* 3. Secondary Font: Source Sans 3 */
+    table tbody td,
+    table tbody td *:not(.srg-stock-num):not(.srg-num-primary):not(.srg-num-critical):not(.srg-num-warning):not(.srg-num-healthy):not(button):not(.srg-badge-critical):not(.srg-badge-warning):not(.srg-badge-healthy):not(.srg-badge-neutral),
+    p,
+    label,
+    select,
+    .srg-text-sub,
+    .srg-card-sub,
+    .srg-unit-label {
+      font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+
+    /* 4. Font Sizing & Hierarchy Rules */
+    /* Page Title: 24-28px (1.625rem = 26px) */
+    .srg-main-title {
+      font-size: 1.625rem !important; /* 26px */
+      line-height: 2rem !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.025em !important;
+    }
+
+    /* Section Headings: 17-18px */
+    .srg-section-title {
+      font-size: 1.125rem !important; /* 18px */
+      line-height: 1.5rem !important;
+      font-weight: 600 !important;
+      letter-spacing: -0.015em !important;
+    }
+
+    /* Table Column Headers: 13-14px */
+    table thead th {
+      font-size: 0.84375rem !important; /* 13.5px */
+      font-weight: 600 !important;
+      letter-spacing: 0.03em !important;
+      padding-top: 0.875rem !important;
+      padding-bottom: 0.875rem !important;
+    }
+
+    /* Body Text & Rice Variety Details: 15-16px */
+    .srg-product-name {
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.96875rem !important; /* 15.5px */
+      font-weight: 600 !important;
+      line-height: 1.35 !important;
+    }
+    .srg-variety-tag {
+      font-size: 0.84375rem !important; /* 13.5px */
+      font-weight: 500 !important;
+      line-height: 1.3 !important;
+    }
+
+    /* Supporting labels & descriptions: 13-14px */
+    .srg-label-sm {
+      font-size: 0.84375rem !important; /* 13.5px */
+      font-weight: 600 !important;
+      letter-spacing: 0.04em !important;
+    }
+    .srg-desc-text {
+      font-size: 0.9375rem !important; /* 15px */
+      font-weight: 400 !important;
+      line-height: 1.45 !important;
+    }
+    .srg-advice-text {
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 500 !important;
+      line-height: 1.4 !important;
+    }
+
+    /* High contrast back button */
+    html:not(.dark) #admin-layout-container .srg-back-btn {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-back-btn:hover {
+      background: #F1F5F9 !important;
+      border-color: #94A3B8 !important;
+      color: #020617 !important;
+    }
+    html.dark #admin-layout-container .srg-back-btn {
+      background: #1E293B !important;
+      border: 1px solid #475569 !important;
+      color: #FFFFFF !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html.dark #admin-layout-container .srg-back-btn:hover {
+      background: #334155 !important;
+      border-color: #64748B !important;
+    }
+
+    /* Scoped scrollbar for table container */
+    .replenish-table-scroll-container {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .replenish-table-scroll-container::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .replenish-table-scroll-container::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 9999px;
+    }
+    .replenish-table-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    .replenish-table-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.75);
+    }
+    .dark .replenish-table-scroll-container {
+      scrollbar-color: rgba(100, 116, 139, 0.5) transparent;
+    }
+    .dark .replenish-table-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+    }
+    .dark .replenish-table-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.75);
+    }
+
+    /* 5. High-Contrast Text Enforcement — NO Gray Text */
+    html:not(.dark) #admin-layout-container .srg-text-main {
+      color: #0F172A !important;
+      font-weight: 700 !important;
+    }
+    html.dark #admin-layout-container .srg-text-main {
+      color: #FFFFFF !important;
+      font-weight: 700 !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-text-sub {
+      color: #1E293B !important;
+      font-weight: 500 !important;
+    }
+    html.dark #admin-layout-container .srg-text-sub {
+      color: #F1F5F9 !important;
+      font-weight: 500 !important;
+    }
+
+    html:not(.dark) table thead th {
+      color: #0F172A !important;
+    }
+    html.dark table thead th {
+      color: #F8FAFC !important;
+    }
+
+    /* Header & Period Badge */
+    html:not(.dark) #admin-layout-container .srg-period-badge {
+      background: #F0FDF4 !important;
+      border: 1px solid #86EFAC !important;
+      color: #14532D !important;
+    }
+    html.dark #admin-layout-container .srg-period-badge {
+      background: rgba(16, 185, 129, 0.16) !important;
+      border: 1px solid rgba(52, 211, 153, 0.45) !important;
+      color: #34D399 !important;
+    }
+
+    /* Controls & Selects */
+    html:not(.dark) #admin-layout-container .ia-control-select {
+      background-color: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html:not(.dark) #admin-layout-container .ia-control-select:hover {
+      border-color: #94A3B8 !important;
+      background-color: #F8FAFC !important;
+    }
+    html.dark #admin-layout-container .ia-control-select {
+      background-color: #1E293B !important;
+      border: 1px solid #475569 !important;
+      color: #FFFFFF !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html.dark #admin-layout-container .ia-control-select:hover {
+      border-color: #64748B !important;
+    }
+
+    /* Calendar Popover Trigger Button */
+    html:not(.dark) #admin-layout-container .ia-date-btn-default {
+      background-color: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html:not(.dark) #admin-layout-container .ia-date-btn-default:hover {
+      border-color: #94A3B8 !important;
+      background-color: #F8FAFC !important;
+    }
+    html.dark #admin-layout-container .ia-date-btn-default {
+      background-color: #1E293B !important;
+      border: 1px solid #475569 !important;
+      color: #F8FAFC !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html.dark #admin-layout-container .ia-date-btn-default:hover {
+      border-color: #64748B !important;
+      background-color: #334155 !important;
+    }
+
+    html:not(.dark) #admin-layout-container .ia-date-btn-active {
+      background-color: #F0FDF4 !important;
+      border: 1px solid #10B981 !important;
+      color: #065F46 !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+    html.dark #admin-layout-container .ia-date-btn-active {
+      background-color: rgba(6, 78, 59, 0.5) !important;
+      border: 1px solid #34D399 !important;
+      color: #A7F3D0 !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important; /* 14px */
+      font-weight: 600 !important;
+    }
+
+    /* Calendar Popover Panel */
+    html:not(.dark) #admin-layout-container #srg-calendar-popover {
+      background-color: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    }
+    html.dark #admin-layout-container #srg-calendar-popover {
+      background-color: #1E293B !important;
+      border: 1px solid #475569 !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* 4 High-Contrast Clean Stat Cards */
+    html:not(.dark) #admin-layout-container .srg-stat-critical {
+      background: #FFFFFF !important;
+      border: 1px solid #FECACA !important;
+    }
+    html.dark #admin-layout-container .srg-stat-critical {
+      background: #111827 !important;
+      border: 1px solid rgba(248, 113, 113, 0.35) !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-critical .srg-card-label {
+      color: #991B1B !important;
+    }
+    html.dark #admin-layout-container .srg-stat-critical .srg-card-label {
+      color: #FECACA !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-critical .srg-card-num {
+      color: #991B1B !important;
+    }
+    html.dark #admin-layout-container .srg-stat-critical .srg-card-num {
+      color: #FFFFFF !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-critical .srg-card-sub {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-critical .srg-card-sub {
+      color: #F8FAFC !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-stat-warning {
+      background: #FFFFFF !important;
+      border: 1px solid #FDE68A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-warning {
+      background: #111827 !important;
+      border: 1px solid rgba(251, 191, 36, 0.35) !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-warning .srg-card-label {
+      color: #92400E !important;
+    }
+    html.dark #admin-layout-container .srg-stat-warning .srg-card-label {
+      color: #FDE68A !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-warning .srg-card-num {
+      color: #92400E !important;
+    }
+    html.dark #admin-layout-container .srg-stat-warning .srg-card-num {
+      color: #FFFFFF !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-warning .srg-card-sub {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-warning .srg-card-sub {
+      color: #F8FAFC !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-stat-healthy {
+      background: #FFFFFF !important;
+      border: 1px solid #A7F3D0 !important;
+    }
+    html.dark #admin-layout-container .srg-stat-healthy {
+      background: #111827 !important;
+      border: 1px solid rgba(52, 211, 153, 0.35) !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-healthy .srg-card-label {
+      color: #065F46 !important;
+    }
+    html.dark #admin-layout-container .srg-stat-healthy .srg-card-label {
+      color: #A7F3D0 !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-healthy .srg-card-num {
+      color: #065F46 !important;
+    }
+    html.dark #admin-layout-container .srg-stat-healthy .srg-card-num {
+      color: #FFFFFF !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-healthy .srg-card-sub {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-healthy .srg-card-sub {
+      color: #F8FAFC !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-stat-neutral {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    html.dark #admin-layout-container .srg-stat-neutral {
+      background: #111827 !important;
+      border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-neutral .srg-card-label {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-neutral .srg-card-label {
+      color: #F8FAFC !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-neutral .srg-card-num {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-neutral .srg-card-num {
+      color: #FFFFFF !important;
+    }
+    html:not(.dark) #admin-layout-container .srg-stat-neutral .srg-card-sub {
+      color: #0F172A !important;
+    }
+    html.dark #admin-layout-container .srg-stat-neutral .srg-card-sub {
+      color: #F8FAFC !important;
+    }
+
+    /* Status Badges with High Contrast */
+    .srg-badge-critical,
+    .srg-badge-critical span {
+      background-color: #DC2626 !important;
+      border: 1px solid #B91C1C !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    .dark .srg-badge-critical,
+    .dark .srg-badge-critical span {
+      background-color: #DC2626 !important;
+      border-color: #F87171 !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important;
+    }
+
+    .srg-badge-warning,
+    .srg-badge-warning span {
+      background-color: #D97706 !important;
+      border: 1px solid #B45309 !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    .dark .srg-badge-warning,
+    .dark .srg-badge-warning span {
+      background-color: #D97706 !important;
+      border-color: #FBBF24 !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important;
+    }
+
+    .srg-badge-healthy,
+    .srg-badge-healthy span {
+      background-color: #16A34A !important;
+      border: 1px solid #15803D !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    .dark .srg-badge-healthy,
+    .dark .srg-badge-healthy span {
+      background-color: rgba(34, 197, 94, 0.25) !important;
+      border-color: #4ADE80 !important;
+      color: #4ADE80 !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important;
+    }
+
+    .srg-badge-neutral,
+    .srg-badge-neutral span {
+      background-color: #475569 !important;
+      border: 1px solid #334155 !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    .dark .srg-badge-neutral,
+    .dark .srg-badge-neutral span {
+      background-color: #334155 !important;
+      border-color: #64748B !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      font-size: 0.8125rem !important;
+    }
+
+    /* Horizontal Stock Bar Colors */
+    .srg-bar-needstock,
+    .srg-bar-outofstock {
+      background-color: #EF4444 !important;
+    }
+    .dark .srg-bar-needstock,
+    .dark .srg-bar-outofstock {
+      background-color: #F87171 !important;
+    }
+
+    .srg-bar-lowstock,
+    .srg-bar-preparesoon {
+      background-color: #F59E0B !important;
+    }
+    .dark .srg-bar-lowstock,
+    .dark .srg-bar-preparesoon {
+      background-color: #FBBF24 !important;
+    }
+
+    .srg-bar-enough {
+      background-color: #16A34A !important;
+    }
+    .dark .srg-bar-enough {
+      background-color: #4ADE80 !important;
+    }
+
+
+
+    html:not(.dark) #admin-layout-container .srg-progress-track {
+      background-color: #F1F5F9;
+      border: 1px solid #CBD5E1;
+    }
+    html.dark #admin-layout-container .srg-progress-track {
+      background-color: #1E293B;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    /* Rice Varieties Stock Breakdown Table: All stock numbers strictly solid black (#000000), 19-20px (19.5px), and semibold (600) */
+    html:not(.dark) #admin-layout-container .srg-stock-num {
+      color: #000000 !important;
+      font-size: 19.5px !important;
+      font-weight: 600 !important;
+      line-height: 1.3 !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+    html.dark #admin-layout-container .srg-stock-num {
+      color: #FFFFFF !important;
+      font-size: 19.5px !important;
+      font-weight: 600 !important;
+      line-height: 1.3 !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-num-primary {
+      color: #0F172A !important;
+      font-weight: 700 !important;
+    }
+    html.dark #admin-layout-container .srg-num-primary {
+      color: #FFFFFF !important;
+      font-weight: 700 !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-num-critical {
+      color: #DC2626 !important;
+      font-weight: 700 !important;
+    }
+    html.dark #admin-layout-container .srg-num-critical {
+      color: #F87171 !important;
+      font-weight: 700 !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-num-warning {
+      color: #D97706 !important;
+      font-weight: 700 !important;
+    }
+    html.dark #admin-layout-container .srg-num-warning {
+      color: #FBBF24 !important;
+      font-weight: 700 !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-num-healthy {
+      color: #1E6C02 !important;
+      font-weight: 600 !important;
+    }
+    html.dark #admin-layout-container .srg-num-healthy {
+      color: #34D399 !important;
+      font-weight: 600 !important;
+    }
+
+    /* Unit labels: 14-15px (14.5px) in solid black (#000000) */
+    html:not(.dark) #admin-layout-container .srg-unit-label {
+      color: #000000 !important;
+      font-size: 14.5px !important;
+      font-weight: 500 !important;
+      font-family: 'Source Sans 3', sans-serif !important;
+    }
+    html.dark #admin-layout-container .srg-unit-label {
+      color: #F1F5F9 !important;
+      font-size: 14.5px !important;
+      font-weight: 500 !important;
+      font-family: 'Source Sans 3', sans-serif !important;
+    }
+
+    html:not(.dark) #admin-layout-container .srg-avatar {
+      background-color: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+    }
+    html.dark #admin-layout-container .srg-avatar {
+      background-color: #1E293B;
+      border: 1px solid #475569;
+      color: #F8FAFC;
+    }
+
+    /* Expected Stock & Delivery Timing presentation styles */
+    .ia-section-heading {
+      font-size: 18px !important;
+      line-height: 1.4 !important;
+      font-weight: 600 !important;
+      letter-spacing: -0.01em !important;
+    }
+    .ia-normal-text {
+      font-size: 15px !important;
+      line-height: 1.45 !important;
+      font-weight: 400 !important;
+    }
+    .ia-small-label {
+      font-size: 13.5px !important;
+      line-height: 1.35 !important;
+      font-weight: 500 !important;
+    }
+    .ia-important-num {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      font-size: 26px !important;
+      font-weight: 700 !important;
+      line-height: 1.2 !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    html:not(.dark) #admin-layout-container .ia-section-heading,
+    html:not(.dark) #admin-layout-container .ia-important-num,
+    html:not(.dark) #admin-layout-container .ia-normal-text,
+    html:not(.dark) #admin-layout-container .ia-small-label {
+      color: #000000 !important;
+    }
+    html.dark #admin-layout-container .ia-section-heading,
+    html.dark #admin-layout-container .ia-important-num,
+    html.dark #admin-layout-container .ia-normal-text,
+    html.dark #admin-layout-container .ia-small-label {
+      color: #FFFFFF !important;
+    }
+  </style>
+</head>
+<body class="bg-[#F5F5F5] min-h-screen">
+  <div id="auth-guard-loader" class="fixed inset-0 bg-[#F5F5F5] z-[99999] flex flex-col items-center justify-center font-sans">
+    <div class="w-9 h-9 border-3 border-[#1E6C02]/20 border-t-[#1E6C02] rounded-full animate-spin mb-3"></div>
+    <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">Loading stock needs guide...</p>
+  </div>
+
+  <!-- ADMIN LAYOUT WRAPPER -->
+  <div id="admin-layout-container"></div>
+
+  <script type="module" src="../src/app/shared.js"></script>
+
+  <script type="module">
+    import {
+      protectAdminPage,
+      renderAdminLayout,
+      getAllOrders,
+      getProducts,
+      getVerifiedCustomerPaymentInfo,
+      isReservationOrder,
+      isCancelledOrRejectedOrder,
+      showToast,
+      predictStockAvailability,
+      predictServiceReadinessTime
+    } from '../src/app/shared.js';
+    import {
+      trainProductDemandModel,
+      predictProductDemand
+    } from '../src/app/product-demand-model.js';
+
+    function parseOrderDate(order) {
+      if (!order) return new Date(0);
+
+      function parseRawDateValue(val) {
+        if (!val) return null;
+        if (val instanceof Date) {
+          return !isNaN(val.getTime()) ? val : null;
+        }
+        if (typeof val === 'object') {
+          if (typeof val.toDate === 'function') {
+            const d = val.toDate();
+            return (d instanceof Date && !isNaN(d.getTime())) ? d : null;
+          }
+          if (typeof val.seconds === 'number') {
+            const d = new Date(val.seconds * 1000);
+            return !isNaN(d.getTime()) ? d : null;
+          }
+        }
+        if (typeof val === 'string') {
+          const trimmed = val.trim();
+          const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+          if (dateOnlyMatch) {
+            const yr = parseInt(dateOnlyMatch[1], 10);
+            const mo = parseInt(dateOnlyMatch[2], 10) - 1;
+            const da = parseInt(dateOnlyMatch[3], 10);
+            const localDate = new Date(yr, mo, da, 0, 0, 0, 0);
+            if (!isNaN(localDate.getTime())) return localDate;
+          }
+        }
+        const d = new Date(val);
+        return !isNaN(d.getTime()) ? d : null;
+      }
+
+      const candidates = [
+        order.completedAt,
+        order.completionDate,
+        order.completedDate,
+        order.deliveredAt,
+        order.deliveredDate,
+        order.createdAt,
+        order.dateCreated,
+        order.createdDate,
+        order.date,
+        order.timestamp
+      ];
+
+      for (let i = 0; i < candidates.length; i++) {
+        const parsed = parseRawDateValue(candidates[i]);
+        if (parsed) return parsed;
+      }
+
+      if (order.statusHistory && Array.isArray(order.statusHistory) && order.statusHistory.length > 0) {
+        for (let i = 0; i < order.statusHistory.length; i++) {
+          const parsed = parseRawDateValue(order.statusHistory[i]?.changedAt);
+          if (parsed) return parsed;
+        }
+      }
+      return new Date(0);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Verify admin/staff session safely without modifying authentication state
+      const authResult = await protectAdminPage({ requiredRole: 'any' });
+      if (!authResult || !authResult.ok) return;
+
+      renderAdminLayout('stock-replenishment');
+
+      const targetSpace = document.getElementById('admin-main-content');
+      if (!targetSpace) return;
+
+      // Filter State
+      let replenishFilter = 'all';
+      let replenishPeriod = '30d'; // '7d', '30d', '3m', '6m', '1y', 'custom'
+      let replenishCustomStart = '';
+      let replenishCustomEnd = '';
+      let aiSectionProductFilter = null; // Independent variety filter for Expected Stock section
+
+      // Calendar picking draft state
+      let srgCalViewDate = new Date();
+      let draftSrgStart = '';
+      let draftSrgEnd = '';
+      let srgPickingStep = 'start';
+
+      targetSpace.innerHTML = `
+        <div class="space-y-6 pb-16 max-w-6xl mx-auto">
+          <!-- Top Navigation Row -->
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <a href="dashboard.html" class="srg-back-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shadow-2xs transition-all cursor-pointer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              Back to Dashboard
+            </a>
+
+            <div class="text-right">
+              <span class="srg-label-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Full Details View</span>
+            </div>
+          </div>
+
+          <!-- Section 1: Header Card & Analysis Configuration -->
+          <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xs">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-[#1E6C02] dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-2xs">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 sm:w-7 sm:h-7">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="srg-main-title text-slate-900 dark:text-white">Stock Needs Guide</h1>
+                    <span id="srg-period-badge-text" class="srg-period-badge text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                      Expected Sales in Next 30 Days
+                    </span>
+                  </div>
+                  <p id="srg-subtitle-text" class="srg-desc-text text-slate-800 dark:text-slate-100 mt-1.5">
+                    Check recent sales and current stock to see what needs more stock or should be prepared soon.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Controls: Period Selector, Custom Date Button & Urgency Filter -->
+              <div class="flex items-center gap-3 flex-wrap">
+                <select id="sel-analysis-period" class="ia-control-select h-10 px-3.5 py-2 rounded-xl outline-none cursor-pointer transition-colors shadow-2xs shrink-0">
+                  <option value="30d" selected>Next 30 Days</option>
+                  <option value="7d">Next 7 Days</option>
+                  <option value="3m">Next 3 Months</option>
+                  <option value="6m">Next 6 Months</option>
+                  <option value="1y">Next Year</option>
+                  <option value="custom">Custom Date Range</option>
+                </select>
+
+                <!-- Custom Range Trigger & Popover -->
+                <div id="srg-custom-date-container" class="relative shrink-0">
+                  <button id="btn-srg-custom-range" type="button" class="h-10 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border ia-date-btn-default transition-all shadow-2xs cursor-pointer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <span id="srg-custom-range-label">Custom Date Range</span>
+                  </button>
+
+                  <div id="srg-calendar-popover" class="hidden absolute right-0 top-full mt-2 w-76 sm:w-82 p-4 rounded-2xl z-40 space-y-3 select-none">
+                    <div class="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-700">
+                      <div>
+                        <h5 class="srg-title-inter text-sm font-semibold text-slate-900 dark:text-white">Select Custom Date Range</h5>
+                        <p id="srg-cal-step-hint" class="srg-advice-text text-slate-800 dark:text-slate-100 text-xs mt-0.5">Click a start date, then an end date</p>
+                      </div>
+                      <button id="btn-close-srg-cal" type="button" class="w-7 h-7 rounded-lg inline-flex items-center justify-center text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white cursor-pointer">✕</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                      <div id="srg-cal-start-slot" class="p-2.5 rounded-xl border border-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 text-[#145001] dark:text-emerald-300 cursor-pointer">
+                        <span class="block srg-label-sm font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-400">Start Date</span>
+                        <span id="srg-cal-start-display" class="block font-semibold truncate mt-1">Select date</span>
+                      </div>
+                      <div id="srg-cal-end-slot" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 cursor-pointer">
+                        <span class="block srg-label-sm font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">End Date</span>
+                        <span id="srg-cal-end-display" class="block font-semibold truncate mt-1 text-slate-900 dark:text-white">Select date</span>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                      <button id="btn-srg-cal-prev" type="button" class="ia-control-select px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer">◀</button>
+                      <span id="srg-cal-month-year" class="srg-title-inter text-sm font-semibold text-slate-900 dark:text-white"></span>
+                      <button id="btn-srg-cal-next" type="button" class="ia-control-select px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer">▶</button>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+
+                    <div id="srg-cal-days-grid" class="grid grid-cols-7 gap-1 text-center text-xs font-semibold"></div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <button id="btn-cancel-srg-custom" type="button" class="h-8 px-3 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
+                      <button id="btn-apply-srg-custom" type="button" class="h-8 px-3.5 bg-[#1E6C02] hover:bg-[#145001] dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg cursor-pointer shadow-2xs">Apply</button>
+                    </div>
+                  </div>
+                </div>
+
+                <select id="sel-replenish-filter" class="ia-control-select h-10 px-3.5 py-2 rounded-xl outline-none cursor-pointer transition-colors shadow-2xs shrink-0">
+                  <option value="all" selected>All Items</option>
+                  <option value="replenish">🔴 Low Stock &amp; Out of Stock</option>
+                  <option value="prepare">🟡 Stock Running Low</option>
+                  <option value="sufficient">🟢 Stock Available</option>
+                  <option id="opt-replenish-nosales" value="insufficient">⚪ No Recent Sales</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1.5: Forecast Information -->
+          <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+            <!-- Header -->
+            <div class="flex items-start sm:items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800/70 flex items-center justify-center shrink-0 shadow-2xs">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-sky-600 dark:text-sky-400">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                  <path d="M4 14l6-6 4 4 6-6"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Forecast Information</h3>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  How RiceFlow estimates future stock needs
+                </p>
+              </div>
+            </div>
+
+            <!-- Middle Cards: 2 Clearly Separated Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Left Card: Sales in the Past 30 Days -->
+              <div class="p-3 sm:p-4 rounded-xl bg-slate-50/80 dark:bg-[#1E293B]/40 border border-slate-200/90 dark:border-slate-800/90 flex flex-col justify-between space-y-1.5 shadow-2xs">
+                <div>
+                  <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 block">Sales in the Past 30 Days</span>
+                  <p id="srg-forecast-orders-count" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1 tabular-nums">Loading orders...</p>
+                  <p id="srg-forecast-sacks-count" class="text-sm font-normal text-slate-600 dark:text-slate-300 mt-1 tabular-nums">Loading sacks...</p>
+                </div>
+                <!-- Hidden compatibility hooks for existing script references -->
+                <span id="srg-readiness-orders-summary" class="sr-only"></span>
+              </div>
+
+              <!-- Right Card: Forecast Status (Distinct Amber Outlined Box) -->
+              <div id="srg-forecast-status-card" class="p-3 sm:p-4 rounded-xl bg-amber-50/20 dark:bg-amber-950/15 border border-amber-500/70 dark:border-amber-500/60 flex flex-col justify-between space-y-1.5 shadow-2xs">
+                <div>
+                  <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 block">Forecast Status</span>
+                  <h4 id="srg-forecast-status-title" class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">Still Learning</h4>
+                  <p id="srg-forecast-status-desc" class="text-xs sm:text-sm font-normal text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                    More sales records are needed for better estimates.
+                  </p>
+                </div>
+                <!-- Hidden compatibility hooks for existing script references -->
+                <span id="srg-readiness-span-summary" class="sr-only"></span>
+              </div>
+            </div>
+
+            <!-- Bottom Collapsible Section: How estimates work -->
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-[#1E293B]/50 p-3 sm:p-4 transition-all shadow-2xs">
+              <details class="group select-none" id="srg-how-estimates-details">
+                <summary class="flex items-start justify-between gap-3 cursor-pointer list-none">
+                  <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 mt-0.5 shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <span class="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        How estimates work
+                      </span>
+                      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
+                        RiceFlow uses past sales and customer reservations to estimate future stock needs.
+                      </p>
+                    </div>
+                  </div>
+                  <div class="p-1 rounded-lg text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-200 group-open:rotate-180 shrink-0 mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-5 h-5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </div>
+                </summary>
+
+                <!-- Collapsible explanation details -->
+                <div class="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 space-y-4">
+                  <p class="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300">
+                    Here is a simple explanation of how RiceFlow calculates stock needs for store staff:
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div class="p-4 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-2xs">
+                      <div class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-[#1E6C02] dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                        Average Daily Sales
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        RiceFlow counts the sacks sold in the last 30 days to find how many sacks customers buy on a typical day.
+                      </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-2xs">
+                      <div class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-400 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                        Multiply by Days
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        The daily average is multiplied by the days you selected (e.g. next 7 days, 14 days, or this month).
+                      </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-2xs">
+                      <div class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                        Add Customer Reservations
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        Sacks already set aside for waiting customer reservations are added to the total sacks needed.
+                      </p>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-2xs">
+                      <div class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-400 flex items-center justify-center text-xs font-bold shrink-0">4</span>
+                        Extra Sacks Needed
+                      </div>
+                      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+                        If current warehouse stock cannot cover this total, RiceFlow calculates the extra sacks to prepare.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Section 2: Stock Needs Summary Cards -->
+          <div>
+            <div class="flex items-center justify-between mb-3 px-1">
+              <h2 class="srg-section-title text-slate-900 dark:text-white">Summary Overview</h2>
+              <span class="srg-label-sm font-semibold text-slate-800 dark:text-slate-100">Live Status Snapshot</span>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- 1. Low Stock & Out of Stock -->
+              <div class="srg-stat-critical rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div class="flex items-start gap-3.5">
+                  <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800/60 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <span class="srg-card-label srg-label-sm uppercase block font-semibold">Out of Stock</span>
+                    <p id="replenish-stat-now" class="srg-card-num text-3xl font-bold tabular-nums mt-1 leading-none">0</p>
+                  </div>
+                </div>
+                <p class="srg-card-sub srg-advice-text mt-3">Stock needs attention</p>
+              </div>
+
+              <!-- 2. Stock Running Low -->
+              <div class="srg-stat-warning rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div class="flex items-start gap-3.5">
+                  <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <span class="srg-card-label srg-label-sm uppercase block font-semibold">Stock Running Low</span>
+                    <p id="replenish-stat-soon" class="srg-card-num text-3xl font-bold tabular-nums mt-1 leading-none">0</p>
+                  </div>
+                </div>
+                <p class="srg-card-sub srg-advice-text mt-3">Consider preparing more</p>
+              </div>
+
+              <!-- 3. Stock Available -->
+              <div class="srg-stat-healthy rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div class="flex items-start gap-3.5">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <span class="srg-card-label srg-label-sm uppercase block font-semibold">Enough Stock</span>
+                    <p id="replenish-stat-sufficient" class="srg-card-num text-3xl font-bold tabular-nums mt-1 leading-none">0</p>
+                  </div>
+                </div>
+                <p class="srg-card-sub srg-advice-text mt-3">Stock is enough for now</p>
+              </div>
+
+              <!-- 4. No Recent Sales -->
+              <div class="srg-stat-neutral rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div class="flex items-start gap-3.5">
+                  <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <span id="srg-card-nosales-label" class="srg-card-label srg-label-sm uppercase block font-semibold">No Recent Sales</span>
+                    <p id="replenish-stat-insufficient" class="srg-card-num text-3xl font-bold tabular-nums mt-1 leading-none">0</p>
+                  </div>
+                </div>
+                <p id="srg-card-nosales-sub" class="srg-card-sub srg-advice-text mt-3">No verified sales in past 30 days</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Full Details Inventory Table -->
+          <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xs">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-2">
+              <div>
+                <h2 class="srg-section-title text-slate-900 dark:text-white">Rice Varieties Stock Breakdown</h2>
+                <p class="srg-desc-text text-slate-800 dark:text-slate-100 mt-0.5">See warehouse stock, customer reservations, stock ready to sell, and how much more may be needed.</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto replenish-table-scroll-container">
+              <table class="w-full text-left min-w-[960px] srg-clean-table">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 uppercase tracking-wide text-slate-900 dark:text-slate-100 text-sm">
+                    <th class="py-3.5 px-4 text-left w-[24%]">Rice Variety</th>
+                    <th class="py-3.5 px-3 text-center w-[12%]" title="Sacks physically stored in the warehouse">Warehouse Stock</th>
+                    <th class="py-3.5 px-3 text-center w-[11%]" title="Sacks set aside for customer orders">Reserved</th>
+                    <th class="py-3.5 px-3 text-center w-[13%]" title="Sacks available for new orders">Ready to Sell</th>
+                    <th class="py-3.5 px-3 text-center w-[14%]" title="Extra sacks needed to cover expected demand and reservations">Extra Sacks Needed</th>
+                    <th class="py-3.5 px-4 text-left w-[26%]" title="Current status and inventory advice">Stock Status &amp; Advice</th>
+                  </tr>
+                </thead>
+                <tbody id="replenish-guide-tbody">
+                  <!-- Dynamically populated rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bottom Return Row -->
+          <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p class="srg-section-title text-slate-900 dark:text-white">Stock Needs Details Summary</p>
+              <p class="srg-desc-text text-slate-800 dark:text-slate-100 mt-1">
+                Data reflects verified sales orders and current stock figures from Aurora Rice warehouse inventory.
+              </p>
+            </div>
+            <a href="dashboard.html" class="srg-back-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-2xs transition-all cursor-pointer">
+              ← Return to Dashboard
+            </a>
+          </div>
+
+          <!-- Expected Stock & Delivery Timing: presentation-only redesign. Keep all IDs used by existing logic. -->
+          <section class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm space-y-5">
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-[#1E6C02] dark:text-emerald-400 shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                <div class="min-w-0">
+                  <h2 class="ia-section-heading">Expected Stock &amp; Delivery Timing</h2>
+                  <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">Simple estimates from past deliveries and orders.</p>
+                </div>
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <label for="sel-ai-stock-product" class="text-sm font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">Rice variety</label>
+                <select id="sel-ai-stock-product" class="ia-control-select h-10 px-3 rounded-xl outline-none cursor-pointer text-sm font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 min-w-0 sm:min-w-[220px] max-w-full" title="Select rice variety for restock estimate" aria-label="Rice variety for expected restock estimate">
+                  <option value="">Loading varieties...</option>
+                </select>
+                <span class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-[#1E6C02] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 w-fit">Smart Estimates</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+              <!-- Restock card: primary result first; detailed diagnostics remain available below. -->
+              <article class="rounded-xl border border-rose-200 dark:border-rose-900/70 bg-gradient-to-br from-rose-50 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-5 flex flex-col gap-3 min-w-0">
+                <div class="flex items-center gap-2 text-rose-800 dark:text-rose-300"><span class="text-lg" aria-hidden="true">📦</span><h3 class="text-sm font-bold">Expected Restock</h3></div>
+                <span id="ai-stock-variety-tag" class="hidden">All Varieties</span>
+                <p id="ai-stock-window" class="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">Cannot Estimate Restock Date Yet</p>
+                <p id="ai-stock-status-desc" class="text-sm leading-relaxed text-slate-700 dark:text-slate-200">We need more past delivery records before we can estimate when new stock will arrive.</p>
+                <div class="mt-auto pt-3 border-t border-rose-100 dark:border-rose-900/60">
+                  <p class="text-xs text-slate-600 dark:text-slate-300">Delivery records checked: <strong id="ai-stock-sample-count" class="font-semibold">0 past deliveries</strong></p>
+                  <p id="ai-stock-disclaimer" class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-2">Not enough past delivery records to estimate the next restock date yet.</p>
+                  <details class="mt-3 group">
+                    <summary class="cursor-pointer select-none text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-[#1E6C02]">View calculation details</summary>
+                    <div class="mt-3 rounded-lg bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 p-3 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+                      <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Method used</span><strong id="ai-stock-method" class="font-semibold text-left sm:text-right">Past delivery dates</strong></div>
+                      <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Stock priority</span><strong id="ai-stock-public-avail" class="font-semibold text-left sm:text-right">First-come, first-served queue</strong></div>
+                    </div>
+                  </details>
+                </div>
+              </article>
+
+              <!-- Preparation card -->
+              <article class="rounded-xl border border-blue-200 dark:border-blue-900/70 bg-gradient-to-br from-blue-50 via-white to-white dark:from-blue-950/30 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-5 flex flex-col gap-3 min-w-0">
+                <div class="flex items-center gap-2 text-blue-800 dark:text-blue-300"><span class="text-lg" aria-hidden="true">⏱️</span><h3 class="text-sm font-bold">Order Preparation</h3></div>
+                <p id="ai-service-leadtime" class="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">1 to 2 business days</p>
+                <p id="ai-service-desc" class="text-sm leading-relaxed text-slate-700 dark:text-slate-200">Estimated time needed to prepare an order in the warehouse.</p>
+                <p id="ai-service-fallback-note" class="text-xs leading-relaxed text-amber-700 dark:text-amber-300">Default estimate only — not based on enough completed orders yet.</p>
+                <div class="mt-auto pt-3 border-t border-blue-100 dark:border-blue-900/60">
+                  <p class="text-xs text-slate-600 dark:text-slate-300">Completed orders checked: <strong id="ai-service-sample-count" class="font-semibold">Based on 0 valid completed orders.</strong></p>
+                  <p id="ai-service-disclaimer" class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mt-2">This estimate is based on past orders. Actual preparation time may be different.</p>
+                  <details class="mt-3 group">
+                    <summary class="cursor-pointer select-none text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-[#1E6C02]">View calculation details</summary>
+                    <div class="mt-3 rounded-lg bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 p-3 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+                      <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Estimate meaning</span><strong class="font-semibold text-left sm:text-right">Time needed to prepare an order</strong></div>
+                      <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Method used</span><strong id="ai-service-method" class="font-semibold text-left sm:text-right">Past order preparation times</strong></div>
+                    </div>
+                  </details>
+                </div>
+              </article>
+
+              <!-- AI forecast: full width so the status and simple explanation are easy to read. -->
+              <article id="ai-demand-forecast-panel" class="lg:col-span-2 rounded-xl border border-emerald-200 dark:border-emerald-900/70 bg-gradient-to-br from-emerald-50/80 via-white to-white dark:from-emerald-950/25 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-5 flex flex-col gap-3 min-w-0">
+                <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-xl shrink-0" aria-hidden="true">🌾</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-bold text-emerald-900 dark:text-emerald-200">AI Sales Forecast</h3><span id="ai-demand-variety-tag" class="hidden">All Varieties</span></div>
+                    <p id="ai-demand-headline" class="text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white mt-2">Not Enough Sales Yet</p>
+                    <p id="ai-demand-status-note" class="text-sm leading-relaxed text-slate-700 dark:text-slate-200 mt-2">More verified sales history is needed before a sales guess can be made for this variety.</p>
+                    <p id="ai-demand-desc" class="text-sm leading-relaxed text-slate-600 dark:text-slate-300 mt-1">Sales guess trained on historical daily sack sales and customer reservations.</p>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-emerald-100 dark:border-emerald-900/60">
+                  <div class="rounded-lg bg-white/80 dark:bg-slate-950/40 border border-emerald-100 dark:border-emerald-900/60 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Forecast period</p><p id="ai-demand-horizon" class="text-sm font-semibold text-slate-900 dark:text-white mt-1">30 Days (Selected Coverage)</p></div>
+                  <div class="rounded-lg bg-white/80 dark:bg-slate-950/40 border border-emerald-100 dark:border-emerald-900/60 p-3"><p class="text-xs text-slate-500 dark:text-slate-400">Forecast status</p><p id="ai-demand-status-badge" class="text-sm font-semibold text-slate-900 dark:text-white mt-1">Not Enough Sales Yet</p></div>
+                </div>
+                <p id="ai-demand-disclaimer" class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">Experimental &amp; advisory only. Does not allocate stock or alter standard FIFO queue operations.</p>
+                <details class="group">
+                  <summary class="cursor-pointer select-none text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-[#1E6C02]">View AI forecast details</summary>
+                  <div class="mt-3 rounded-lg bg-white/80 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 p-3 space-y-2 text-xs text-slate-700 dark:text-slate-200">
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Uncertainty range</span><strong id="ai-demand-uncertainty" class="font-semibold text-left sm:text-right">None (Waiting for more sales)</strong></div>
+                    <div class="flex flex-col sm:flex-row sm:justify-between gap-1"><span>Readiness checks</span><strong id="ai-demand-readiness-metrics" class="font-semibold text-left sm:text-right">Evaluating records...</strong></div>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </section>
+        </div>
+      `;
+
+      function formatYMD(d) {
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const da = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${da}`;
+      }
+
+      function formatYMDReadableShort(ymdStr, includeYear = true) {
+        if (!ymdStr) return '';
+        const parts = ymdStr.split('-');
+        if (parts.length !== 3) return ymdStr;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const mIdx = Number(parts[1]) - 1;
+        const day = Number(parts[2]);
+        const year = parts[0];
+        return includeYear ? `${months[mIdx]} ${day}, ${year}` : `${months[mIdx]} ${day}`;
+      }
+
+      function formatCompactCustomRangeLabel(sStr, eStr) {
+        if (!sStr || !eStr) return 'Custom Date Range';
+        return `${formatYMDReadableShort(sStr, true)} - ${formatYMDReadableShort(eStr, true)}`;
+      }
+
+      function getReplenishmentPeriodRange() {
+        const now = new Date();
+        let coverageDays = 30;
+        let periodLabel = 'Expected Sales in Next 30 Days';
+        let periodName = 'Next 30 Days';
+        let periodBadgeText = 'Expected Sales in Next 30 Days';
+        let periodShortTag = '30d';
+
+        if (replenishPeriod === '7d') {
+          coverageDays = 7;
+          periodLabel = 'Expected Sales in Next 7 Days';
+          periodName = 'Next 7 Days';
+          periodBadgeText = 'Expected Sales in Next 7 Days';
+          periodShortTag = '7d';
+        } else if (replenishPeriod === '3m') {
+          coverageDays = 90;
+          periodLabel = 'Expected Sales in Next 3 Months';
+          periodName = 'Next 3 Months';
+          periodBadgeText = 'Expected Sales in Next 3 Months';
+          periodShortTag = '3m';
+        } else if (replenishPeriod === '6m') {
+          coverageDays = 180;
+          periodLabel = 'Expected Sales in Next 6 Months';
+          periodName = 'Next 6 Months';
+          periodBadgeText = 'Expected Sales in Next 6 Months';
+          periodShortTag = '6m';
+        } else if (replenishPeriod === '1y') {
+          coverageDays = 365;
+          periodLabel = 'Expected Sales in Next Year';
+          periodName = 'Next Year';
+          periodBadgeText = 'Expected Sales in Next Year';
+          periodShortTag = '1y';
+        } else if (replenishPeriod === 'custom') {
+          const sVal = replenishCustomStart;
+          const eVal = replenishCustomEnd;
+          if (sVal && eVal) {
+            const [sY, sM, sD] = sVal.split('-').map(Number);
+            const [eY, eM, eD] = eVal.split('-').map(Number);
+            const dStart = new Date(sY, sM - 1, sD);
+            const dEnd = new Date(eY, eM - 1, eD);
+            const diffMs = dEnd.getTime() - dStart.getTime();
+            const elapsedDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+            coverageDays = elapsedDays;
+            periodLabel = `Expected Sales for Selected Dates`;
+            periodName = `${elapsedDays} Days`;
+            periodBadgeText = `Expected Sales for Selected Dates (${formatCompactCustomRangeLabel(sVal, eVal)})`;
+            periodShortTag = 'Custom';
+          }
+        }
+
+        // Verified historical sales baseline: past 30 days
+        const baselineDays = 30;
+        const baselineEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const baselineStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
+
+        return {
+          coverageDays,
+          baselineDays,
+          baselineStartDate,
+          baselineEndDate,
+          periodLabel,
+          periodName,
+          periodBadgeText,
+          periodShortTag
+        };
+      }
+
+      function renderStockReplenishmentGuide() {
+        const tbody = document.getElementById('replenish-guide-tbody');
+        if (!tbody) return;
+
+        const periodInfo = getReplenishmentPeriodRange();
+        const { coverageDays, baselineDays, baselineStartDate, baselineEndDate, periodLabel, periodName, periodBadgeText, periodShortTag } = periodInfo;
+
+        const badgeEl = document.getElementById('srg-period-badge-text');
+        if (badgeEl) badgeEl.textContent = periodBadgeText;
+
+        const subtitleEl = document.getElementById('srg-subtitle-text');
+        if (subtitleEl) {
+          subtitleEl.textContent = `Expected sales and current stock levels for ${periodName.toLowerCase()}.`;
+        }
+
+        const needHeaderEl = document.getElementById('srg-col-need-header');
+        if (needHeaderEl) needHeaderEl.textContent = periodLabel;
+
+        const noSalesCardLabel = document.getElementById('srg-card-nosales-label');
+        if (noSalesCardLabel) noSalesCardLabel.textContent = 'No Recent Sales';
+
+        const noSalesCardSub = document.getElementById('srg-card-nosales-sub');
+        if (noSalesCardSub) noSalesCardSub.textContent = 'No verified sales in past 30 days';
+
+        const optNoSales = document.getElementById('opt-replenish-nosales');
+        if (optNoSales) optNoSales.textContent = '⚪ No Recent Sales';
+
+        const productsList = typeof getProducts === 'function' ? getProducts() : [];
+        const activeProducts = productsList.filter(p => !p.isArchived && !p.archived);
+
+        const liveOrders = typeof getAllOrders === 'function' ? getAllOrders() : [];
+
+        // Filter verified customer sales orders strictly within the 30-day historical baseline
+        // Excludes cancellations, rejections, replacements, and reservation orders
+        const verifiedBaselineSales = liveOrders.filter(o => {
+          if (!o || o.isReplacement) return false;
+          if (isCancelledOrRejectedOrder(o)) return false;
+          if (isReservationOrder(o)) return false;
+          const info = getVerifiedCustomerPaymentInfo(o);
+          if (!info || !info.isVerified) return false;
+          const oDate = parseOrderDate(o);
+          return oDate >= baselineStartDate && oDate <= baselineEndDate;
+        });
+
+        // Compute verified sales volume per active product within 30-day baseline
+        const baselineSalesMap = {};
+        verifiedBaselineSales.forEach(order => {
+          (order.items || []).forEach(item => {
+            if (!item || item.isReservation) return;
+            const qty = Number(item.quantity || 0);
+            if (qty <= 0) return;
+
+            const rawProdId = item.product?.id ?? item.productId ?? null;
+            let candidateId = (rawProdId !== null && rawProdId !== undefined && rawProdId !== '' && rawProdId !== 'undefined' && rawProdId !== 'null' && rawProdId !== '[object Object]')
+              ? String(rawProdId).trim()
+              : null;
+
+            if (!candidateId && item.id && productsList.some(p => String(p.id).trim() === String(item.id).trim())) {
+              candidateId = String(item.id).trim();
+            }
+
+            let matched = null;
+            if (candidateId) {
+              matched = activeProducts.find(p => String(p.id).trim() === candidateId);
+              if (!matched && productsList.some(p => String(p.id).trim() === candidateId)) {
+                return;
+              }
+            }
+
+            if (!matched) {
+              const rawItemName = item.product?.name ?? item.productName ?? (typeof item.product === 'string' ? item.product : '') ?? item.name ?? '';
+              const normItemName = String(rawItemName).trim().toLowerCase();
+              if (normItemName) {
+                matched = activeProducts.find(p => String(p.name || '').trim().toLowerCase() === normItemName);
+              }
+            }
+
+            if (matched) {
+              baselineSalesMap[matched.id] = (baselineSalesMap[matched.id] || 0) + qty;
+            }
+          });
+        });
+
+        // Build data structure for each active product using daily sales velocity projected over coverage days
+        const rows = activeProducts.map(p => {
+          const currentStock = p.currentStock !== undefined ? Math.max(0, Number(p.currentStock)) : Math.max(0, Number(p.stock || 0));
+          const reservedStock = p.reservedStock !== undefined ? Math.max(0, Number(p.reservedStock)) : 0;
+          const allocatedStock = p.allocatedStock !== undefined ? Math.max(0, Number(p.allocatedStock)) : 0;
+          const availableStock = p.availableStock !== undefined ? Math.max(0, Number(p.availableStock)) : Math.max(0, currentStock - allocatedStock);
+          const totalSetAside = allocatedStock + reservedStock;
+
+          const baselineSales = baselineSalesMap[p.id] || 0;
+          const dailySalesRate = baselineSales / baselineDays;
+          // Estimated stock need for coverage period, rounded UP to whole sacks
+          const estimatedNeed = Math.ceil(dailySalesRate * coverageDays);
+
+          const periodDemand = estimatedNeed;
+          const waitingReservations = reservedStock;
+          const totalDemand = periodDemand + waitingReservations;
+          const shortfall = Math.max(0, totalDemand - availableStock);
+
+          let recommendation = '';
+          let badgeClass = '';
+          let dotClass = '';
+          let explanation = '';
+          let rank = 5; // 1=Out of Stock, 2=Low Stock, 3=Stock Running Low, 4=No Recent Sales, 5=Stock Available
+
+          if (totalDemand === 0) {
+            if (availableStock <= 0) {
+              recommendation = 'Out of Stock';
+              badgeClass = 'srg-badge-critical';
+              dotClass = 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)]';
+              explanation = 'No sacks ready to sell for new orders.';
+              rank = 1;
+            } else {
+              recommendation = 'No Recent Sales';
+              badgeClass = 'srg-badge-neutral';
+              dotClass = 'bg-slate-400 dark:bg-slate-400';
+              explanation = 'No verified sales in the past 30 days. Check current stock and reservations.';
+              rank = 4;
+            }
+          } else {
+            if (availableStock <= 0) {
+              recommendation = 'Out of Stock';
+              badgeClass = 'srg-badge-critical';
+              dotClass = 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)]';
+              explanation = 'No sacks ready to sell for new orders.';
+              rank = 1;
+            } else if (availableStock < totalDemand) {
+              recommendation = 'Low Stock';
+              badgeClass = 'srg-badge-critical';
+              dotClass = 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)]';
+              explanation = 'Available stock may not cover expected sales and reservations. Check if more stock is needed.';
+              rank = 2;
+            } else if (availableStock < Math.ceil(totalDemand * 1.5)) {
+              recommendation = 'Stock Running Low';
+              badgeClass = 'srg-badge-warning';
+              dotClass = 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]';
+              explanation = 'Stock may be enough for now, but consider preparing more.';
+              rank = 3;
+            } else {
+              recommendation = 'Stock Available';
+              badgeClass = 'srg-badge-healthy';
+              dotClass = 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]';
+              explanation = 'Stock can cover expected sales and reservations, with extra stock remaining.';
+              rank = 5;
+            }
+          }
+
+          return {
+            product: p,
+            currentStock,
+            reservedStock,
+            allocatedStock,
+            totalSetAside,
+            availableStock,
+            baselineSales,
+            dailySalesRate,
+            periodDemand,
+            totalDemand,
+            shortfall,
+            recommendation,
+            badgeClass,
+            dotClass,
+            explanation,
+            rank
+          };
+        });
+
+        // Calculate data readiness indicators based on live orders
+        const totalVerifiedOrders = verifiedBaselineSales.length;
+        const totalVerifiedSacks = Object.values(baselineSalesMap).reduce((a, b) => a + b, 0);
+
+        const validOrderDates = liveOrders
+          .map(o => parseOrderDate(o))
+          .filter(d => d instanceof Date && !isNaN(d.getTime()) && d.getTime() > 0)
+          .sort((a, b) => a.getTime() - b.getTime());
+
+        const earliestOrderDate = validOrderDates[0] || null;
+        const latestOrderDate = validOrderDates[validOrderDates.length - 1] || null;
+        const recordedSpanDays = (earliestOrderDate && latestOrderDate)
+          ? Math.max(1, Math.round((latestOrderDate.getTime() - earliestOrderDate.getTime()) / (1000 * 60 * 60 * 24)))
+          : 0;
+
+        const distinctSalesDates = new Set(
+          verifiedBaselineSales
+            .map(o => {
+              const d = parseOrderDate(o);
+              return (d && !isNaN(d.getTime())) ? d.toISOString().split('T')[0] : null;
+            })
+            .filter(Boolean)
+        ).size;
+
+        const elForecastOrders = document.getElementById('srg-forecast-orders-count');
+        if (elForecastOrders) {
+          elForecastOrders.textContent = `${totalVerifiedOrders} order${totalVerifiedOrders !== 1 ? 's' : ''}`;
+        }
+
+        const elForecastSacks = document.getElementById('srg-forecast-sacks-count');
+        if (elForecastSacks) {
+          elForecastSacks.textContent = `${totalVerifiedSacks} sack${totalVerifiedSacks !== 1 ? 's' : ''} sold`;
+        }
+
+        const elStatusTitle = document.getElementById('srg-forecast-status-title');
+        const elStatusDesc = document.getElementById('srg-forecast-status-desc');
+        const elStatusCard = document.getElementById('srg-forecast-status-card');
+
+        // Plain English forecast status determination based on sales history depth
+        const hasMatureData = recordedSpanDays >= 30 && distinctSalesDates >= 14 && totalVerifiedOrders >= 30;
+
+        if (hasMatureData) {
+          if (elStatusTitle) elStatusTitle.textContent = 'Active & Ready';
+          if (elStatusDesc) elStatusDesc.textContent = 'Verified 30-day sales history is actively guiding stock estimates.';
+          if (elStatusCard) {
+            elStatusCard.className = 'p-6 rounded-2xl bg-emerald-50/20 dark:bg-emerald-950/15 border border-emerald-500/70 dark:border-emerald-500/60 flex flex-col justify-between space-y-1.5 shadow-2xs';
+          }
+        } else {
+          if (elStatusTitle) elStatusTitle.textContent = 'Still Learning';
+          if (elStatusDesc) elStatusDesc.textContent = 'More sales records are needed for better estimates.';
+          if (elStatusCard) {
+            elStatusCard.className = 'p-6 rounded-2xl bg-amber-50/20 dark:bg-amber-950/15 border border-amber-500/70 dark:border-amber-500/60 flex flex-col justify-between space-y-1.5 shadow-2xs';
+          }
+        }
+
+        const elOrdersSummary = document.getElementById('srg-readiness-orders-summary');
+        if (elOrdersSummary) {
+          elOrdersSummary.textContent = `${totalVerifiedOrders} verified sales orders (${totalVerifiedSacks} sacks in 30d baseline)`;
+        }
+
+        const elSpanSummary = document.getElementById('srg-readiness-span-summary');
+        if (elSpanSummary) {
+          elSpanSummary.textContent = `${recordedSpanDays} recorded days observed (${distinctSalesDates} active sales days)`;
+        }
+
+        // Summary Counts
+        const countNow = rows.filter(r => r.availableStock <= 0).length;
+        const countSoon = rows.filter(r => r.recommendation === 'Low Stock' || r.recommendation === 'Stock Running Low').length;
+        const countSufficient = rows.filter(r => r.recommendation === 'Stock Available').length;
+        const countInsufficient = rows.filter(r => r.recommendation === 'No Recent Sales').length;
+
+        const statNow = document.getElementById('replenish-stat-now');
+        if (statNow) statNow.textContent = countNow;
+        const statSoon = document.getElementById('replenish-stat-soon');
+        if (statSoon) statSoon.textContent = countSoon;
+        const statSufficient = document.getElementById('replenish-stat-sufficient');
+        if (statSufficient) statSufficient.textContent = countSufficient;
+        const statInsufficient = document.getElementById('replenish-stat-insufficient');
+        if (statInsufficient) statInsufficient.textContent = countInsufficient;
+
+        // Filter rows
+        let filteredRows = rows;
+        if (replenishFilter === 'replenish' || replenishFilter === 'critical') {
+          filteredRows = rows.filter(r => r.recommendation === 'Out of Stock');
+        } else if (replenishFilter === 'prepare') {
+          filteredRows = rows.filter(r => r.recommendation === 'Low Stock' || r.recommendation === 'Stock Running Low');
+        } else if (replenishFilter === 'sufficient') {
+          filteredRows = rows.filter(r => r.recommendation === 'Stock Available');
+        } else if (replenishFilter === 'insufficient') {
+          filteredRows = rows.filter(r => r.recommendation === 'No Recent Sales');
+        }
+
+        // Sort by urgency rank (1 = Out of Stock, 2 = Low Stock, 3 = Stock Running Low, 4 = No Recent Sales, 5 = Stock Available)
+        // Secondary sort: available stock ascending
+        filteredRows.sort((a, b) => {
+          if (a.rank !== b.rank) return a.rank - b.rank;
+          return a.availableStock - b.availableStock;
+        });
+
+        if (filteredRows.length === 0) {
+          tbody.innerHTML = `
+            <tr class="srg-row srg-row-neutral">
+              <td colspan="6" class="srg-text-main py-12 px-4 text-center font-semibold text-sm">
+                ${activeProducts.length === 0 ? 'No active rice varieties found in catalog.' : 'No rice varieties match the selected recommendation filter.'}
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const maxStockRef = Math.max(100, ...rows.map(item => Math.max(item.currentStock, item.availableStock, 1)));
+        const maxDemandRef = Math.max(20, ...rows.map(item => Math.max(item.periodDemand, 1)));
+
+        tbody.innerHTML = filteredRows.map(r => {
+          const p = r.product;
+          const pName = p.name || 'Rice Variety';
+          const pType = p.type ? `${p.type} Rice` : '25kg sack';
+          const rawImg = String(p.image || p.imageUrl || p.photoUrl || '').trim();
+          const hasImg = rawImg.length > 0 && rawImg !== 'null' && rawImg !== 'undefined';
+
+          const availNumClass = r.availableStock === 0 
+            ? 'srg-num-critical font-semibold text-red-600 dark:text-red-400' 
+            : (r.availableStock <= 10 || r.rank <= 2 
+                ? 'srg-num-warning font-semibold text-amber-600 dark:text-amber-400' 
+                : 'srg-num-healthy font-semibold text-[#1E6C02] dark:text-emerald-400');
+
+          const displayStatus = r.recommendation === 'Stock Available' ? 'Enough Stock' : r.recommendation;
+          let statusBadgeClass = '';
+          let rowStatusClass = 'srg-row-neutral';
+          if (r.recommendation === 'Out of Stock') {
+            statusBadgeClass = 'text-red-700 bg-red-50 border border-red-200 dark:text-red-300 dark:bg-red-950/60 dark:border-red-800';
+            rowStatusClass = 'srg-row-critical';
+          } else if (r.recommendation === 'Low Stock') {
+            statusBadgeClass = 'text-amber-800 bg-amber-50 border border-amber-300 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-700';
+            rowStatusClass = 'srg-row-lowstock';
+          } else if (r.recommendation === 'Stock Running Low') {
+            statusBadgeClass = 'text-amber-800 bg-amber-50 border border-amber-300 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-700';
+            rowStatusClass = 'srg-row-warning';
+          } else if (r.recommendation === 'Stock Available') {
+            statusBadgeClass = 'text-[#1E6C02] bg-emerald-50 border border-emerald-300 dark:text-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-700';
+            rowStatusClass = 'srg-row-healthy';
+          } else {
+            statusBadgeClass = 'text-slate-800 bg-slate-100 border border-slate-300 dark:text-slate-200 dark:bg-slate-800 dark:border-slate-700';
+            rowStatusClass = 'srg-row-neutral';
+          }
+
+          return `
+            <tr class="srg-row ${rowStatusClass} transition-colors"
+                tabindex="0"
+                role="link"
+                data-product-id="${p.id}"
+                data-product-name="${pName}"
+                aria-label="View ${pName} in Admin Products"
+                title="Click to view ${pName} in Admin Products">
+              <!-- 1. Rice Variety -->
+              <td class="py-4 px-4 align-middle">
+                <div class="flex items-center gap-3.5 min-w-[190px]">
+                  <div class="srg-avatar w-11 h-11 rounded-full overflow-hidden shrink-0 flex items-center justify-center shadow-2xs relative bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    ${hasImg ? `
+                      <img src="${rawImg}" alt="${pName}" class="w-full h-full object-cover rounded-full" loading="lazy" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                      <span style="display:none;" class="srg-text-main w-full h-full items-center justify-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                      </span>
+                    ` : `
+                      <span class="srg-text-main w-full h-full flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                      </span>
+                    `}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="srg-product-name text-slate-900 dark:text-white leading-snug truncate" title="${pName}">${pName}</div>
+                    <div class="srg-variety-tag text-slate-800 dark:text-slate-100 mt-0.5">${pType}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- 2. Stock in Warehouse -->
+              <td class="py-4 px-3 text-center align-middle tabular-nums whitespace-nowrap">
+                <span class="srg-stock-num font-semibold text-slate-900 dark:text-white">${r.currentStock}</span>
+                <span class="srg-unit-label ml-1 text-xs text-slate-500 dark:text-slate-400">sacks</span>
+              </td>
+
+              <!-- 3. Reserved for customers -->
+              <td class="py-4 px-3 text-center align-middle tabular-nums whitespace-nowrap">
+                <span class="srg-stock-num font-semibold text-slate-900 dark:text-white">${r.totalSetAside}</span>
+                <span class="srg-unit-label ml-1 text-xs text-slate-600 dark:text-slate-300">sacks</span>
+              </td>
+
+              <!-- 4. Ready to Sell -->
+              <td class="py-4 px-3 text-center align-middle tabular-nums whitespace-nowrap">
+                <span class="srg-stock-num ${availNumClass}">${r.availableStock}</span>
+                <span class="srg-unit-label ml-1 text-xs text-slate-600 dark:text-slate-400 font-normal">sacks</span>
+              </td>
+
+              <!-- 5. Extra Sacks Needed -->
+              <td class="py-4 px-3 text-center align-middle tabular-nums whitespace-nowrap">
+                <span class="srg-stock-num font-semibold text-slate-900 dark:text-white">${r.shortfall > 0 ? r.shortfall : 0}</span>
+                <span class="srg-unit-label ml-1 text-xs text-slate-600 dark:text-slate-400 font-normal">sacks</span>
+              </td>
+
+              <!-- 6. Stock Status & Advice -->
+              <td class="py-4 px-4 align-middle">
+                <div class="flex flex-col gap-1 min-w-[210px] max-w-[340px]">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold w-fit ${statusBadgeClass}">
+                    ${displayStatus}
+                  </span>
+                  <p class="srg-advice-text text-xs leading-relaxed text-slate-900 dark:text-slate-100 font-normal">
+                    ${r.explanation}
+                  </p>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // Bind click & keyboard navigation to Admin Products page with automatic highlight
+        tbody.querySelectorAll('tr.srg-row[data-product-id]').forEach(row => {
+          const pid = row.getAttribute('data-product-id');
+          const pname = row.getAttribute('data-product-name') || '';
+
+          const navigateToAdminProduct = () => {
+            const targetUrl = `products.html?productId=${encodeURIComponent(pid)}&variety=${encodeURIComponent(pname)}`;
+            window.location.href = targetUrl;
+          };
+
+          row.addEventListener('click', () => {
+            navigateToAdminProduct();
+          });
+
+          row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigateToAdminProduct();
+            }
+          });
+        });
+
+        // AI Prediction Intelligence Dynamic Updates for Relocated Section
+        updateAiPredictionSection(aiSectionProductFilter);
+      }
+
+      /**
+       * Determines the most urgent rice variety based on actual live stock levels and active waiting reservations.
+       * Priority:
+       * 1. Varieties that are out of stock (0 sacks) and have active reservations.
+       * 2. Other varieties with zero available stock (0 sacks).
+       * 3. Queued reservations exceeding stock OR critically low stock (<= 20 sacks).
+       * 4. Remaining varieties sorted ascending by stock level, with deterministic tie-break by name and ID.
+       */
+      function findMostUrgentStockVariety(activeProducts, productsList) {
+        if (!Array.isArray(activeProducts) || activeProducts.length === 0) return null;
+
+        // Fetch live canonical orders to check active pending reservations
+        const allOrders = typeof getAllOrders === 'function' ? getAllOrders() : [];
+        const terminalStatuses = ['cancelled', 'rejected', 'expired', 'completed', 'delivered', 'fulfilled'];
+
+        const activeReservations = allOrders.filter(o => {
+          if (!o) return false;
+          const statusClean = String(o.status || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+          if (terminalStatuses.includes(statusClean)) return false;
+          if (o.paymentStatus === 'rejected_expired') return false;
+          return Boolean(
+            o.isPreOrder ||
+            statusClean === 'pre-order' ||
+            statusClean === 'pending-reservation' ||
+            String(o.id || '').toUpperCase().startsWith('RES') ||
+            (Array.isArray(o.items) && o.items.some(it => it && it.isReservation))
+          );
+        });
+
+        const scored = activeProducts.map(p => {
+          const pId = String(p.id || '');
+          const pName = (p.name || '').trim();
+
+          // Canonical available sacks
+          const sacks = p.availableStock !== undefined
+            ? Math.max(0, Number(p.availableStock))
+            : (p.stock !== undefined ? Math.max(0, Number(p.stock)) : 0);
+
+          // Calculate reserved sacks in active waiting reservations
+          let reservedSacks = 0;
+          activeReservations.forEach(o => {
+            (o.items || []).forEach(it => {
+              const itId = String(it.productId || it.product?.id || it.id || '');
+              const itName = (it.name || it.productName || it.product?.name || '').trim();
+              const matches = (itId && itId === pId) ||
+                (itName && itName.toLowerCase() === pName.toLowerCase());
+              if (matches) {
+                reservedSacks += Math.max(0, Number(it.quantity || 1));
+              }
+            });
+          });
+
+          // Priority Tiers based on actual stock concerns:
+          // Tier 1: Out of stock (0 sacks) AND has active reservations
+          // Tier 2: Zero available stock (0 sacks) without active reservations
+          // Tier 3: Queued reservations exceed available stock
+          // Tier 3.5: Critically low available stock (<= 20 sacks)
+          // Tier 4: Low stock (< 50 sacks)
+          // Tier 5: Adequate stock
+          let tier = 5;
+          if (sacks === 0 && reservedSacks > 0) {
+            tier = 1;
+          } else if (sacks === 0) {
+            tier = 2;
+          } else if (reservedSacks > 0 && sacks <= reservedSacks) {
+            tier = 3;
+          } else if (sacks > 0 && sacks <= 20) {
+            tier = 3.5;
+          } else if (sacks < 50) {
+            tier = 4;
+          }
+
+          return {
+            product: p,
+            id: pId,
+            name: pName,
+            sacks,
+            reservedSacks,
+            tier
+          };
+        });
+
+        // Deterministic sorting with consistent tie-break:
+        // Tier ascending -> Reserved sacks descending -> Available sacks ascending -> Name alphabetical -> ID
+        scored.sort((a, b) => {
+          if (a.tier !== b.tier) return a.tier - b.tier;
+          if (b.reservedSacks !== a.reservedSacks) return b.reservedSacks - a.reservedSacks;
+          if (a.sacks !== b.sacks) return a.sacks - b.sacks;
+          return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+        });
+
+        return scored[0]?.product || activeProducts[0];
+      }
+
+      function populateAiSectionDropdown(activeProducts, selectedId) {
+        const selAiProd = document.getElementById('sel-ai-stock-product');
+        if (!selAiProd) return;
+
+        let html = '';
+        activeProducts.forEach(p => {
+          const pId = String(p.id);
+          const sacks = p.availableStock !== undefined
+            ? Math.max(0, Number(p.availableStock))
+            : (p.stock !== undefined ? Math.max(0, Number(p.stock)) : 0);
+
+          let note = '';
+          if (sacks === 0) note = ' — Out of Stock';
+          else if (sacks <= 15) note = ` — ${sacks} sacks (Low)`;
+          else note = ` — ${sacks} sacks`;
+
+          const isSelected = String(pId) === String(selectedId) ? ' selected' : '';
+          html += `<option value="${pId}"${isSelected}>${p.name}${note}</option>`;
+        });
+
+        selAiProd.innerHTML = html;
+        if (selectedId) {
+          selAiProd.value = String(selectedId);
+        }
+      }
+
+      function updateAiPredictionSection(chosenVarietyId) {
+        const productsList = typeof getProducts === 'function' ? getProducts() : [];
+        const activeProducts = productsList.filter(p =>
+          p && p.name && !p.isArchived && !p.archived && p.status !== 'archived'
+        );
+
+        let targetProduct = null;
+        if (chosenVarietyId && chosenVarietyId !== 'all') {
+          targetProduct = activeProducts.find(p => String(p.id) === String(chosenVarietyId)) ||
+                          productsList.find(p => String(p.id) === String(chosenVarietyId));
+        }
+
+        // If no target product chosen, automatically evaluate most urgent stock concern
+        if (!targetProduct) {
+          targetProduct = findMostUrgentStockVariety(activeProducts, productsList);
+        }
+
+        const targetVarietyId = targetProduct ? String(targetProduct.id) : (activeProducts[0]?.id || '2');
+        const targetVarietyName = targetProduct ? targetProduct.name : (activeProducts[0]?.name || 'Rice Variety');
+
+        // Populate/sync the section's dropdown with live data
+        populateAiSectionDropdown(activeProducts, targetVarietyId);
+
+        const stockVarietyEl = document.getElementById('ai-stock-variety-tag');
+        const stockWindowEl = document.getElementById('ai-stock-window');
+        const stockStatusDescEl = document.getElementById('ai-stock-status-desc');
+        const stockMethodEl = document.getElementById('ai-stock-method');
+        const stockSampleCountEl = document.getElementById('ai-stock-sample-count');
+        const stockPublicAvailEl = document.getElementById('ai-stock-public-avail');
+        const stockDisclaimerEl = document.getElementById('ai-stock-disclaimer');
+
+        const serviceLeadTimeEl = document.getElementById('ai-service-leadtime');
+        const serviceFallbackNoteEl = document.getElementById('ai-service-fallback-note');
+        const serviceDescEl = document.getElementById('ai-service-desc');
+        const serviceMethodEl = document.getElementById('ai-service-method');
+        const serviceSampleCountEl = document.getElementById('ai-service-sample-count');
+        const serviceDisclaimerEl = document.getElementById('ai-service-disclaimer');
+
+        if (stockVarietyEl) stockVarietyEl.textContent = targetVarietyName;
+
+        if (typeof predictStockAvailability === 'function') {
+          const stockPred = predictStockAvailability(targetVarietyId);
+          let displayWindow = stockPred.displayDate || 'Cannot Estimate Restock Date Yet';
+          if (displayWindow === 'Waiting for Restock' || displayWindow === 'Restock Schedule Pending') {
+            displayWindow = 'Cannot Estimate Restock Date Yet';
+          }
+          if (stockWindowEl) stockWindowEl.textContent = displayWindow;
+          if (stockStatusDescEl) {
+            if (stockPred.status === 'predicted') {
+              stockStatusDescEl.textContent = `Expected restock window based on an average of ${stockPred.averageIntervalDays} days between past deliveries.`;
+            } else {
+              stockStatusDescEl.textContent = 'We need more past delivery records before we can estimate when new stock will arrive.';
+            }
+          }
+          if (stockMethodEl) stockMethodEl.textContent = stockPred.method || 'Past delivery dates';
+          if (stockSampleCountEl) stockSampleCountEl.textContent = `${stockPred.observationCount} past deliveries (${stockPred.intervalCount} intervals)`;
+          if (stockPublicAvailEl) stockPublicAvailEl.textContent = stockPred.publicAvailabilityStatus || 'First-come, first-served queue';
+          if (stockDisclaimerEl) {
+            if (stockPred.status === 'predicted' && stockPred.confidenceNote) {
+              stockDisclaimerEl.textContent = stockPred.confidenceNote;
+            } else {
+              stockDisclaimerEl.textContent = 'Not enough past delivery records to estimate the next restock date yet.';
+            }
+          }
+        }
+
+        if (typeof predictServiceReadinessTime === 'function') {
+          const servicePred = predictServiceReadinessTime();
+          const isTrainedML = servicePred && servicePred.status === 'predicted' && servicePred.method === 'Ridge Regression (L2 Regularized)';
+          const isFallback = !servicePred || servicePred.status === 'baseline_fallback' || servicePred.isPreliminary || !isTrainedML;
+
+          if (serviceLeadTimeEl) serviceLeadTimeEl.textContent = servicePred.displayTime || '1 to 2 business days';
+
+          if (serviceFallbackNoteEl) {
+            if (isTrainedML) {
+              serviceFallbackNoteEl.textContent = `Trained Ridge ML model (LOOCV MAE: ${servicePred.cvMAE} hrs cross-validation error, R²: ${servicePred.r2Score})`;
+              serviceFallbackNoteEl.className = 'text-xs font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5';
+              serviceFallbackNoteEl.style.display = 'block';
+            } else {
+              serviceFallbackNoteEl.textContent = 'Operational baseline estimate — awaiting sufficient completed order preparation records.';
+              serviceFallbackNoteEl.className = 'text-xs font-medium text-amber-600 dark:text-amber-400 mt-0.5';
+              serviceFallbackNoteEl.style.display = 'block';
+            }
+          }
+
+          if (serviceDescEl) {
+            if (isTrainedML) {
+              serviceDescEl.textContent = `Predicted preparation duration: ~${servicePred.predictedHours} hours based on placement parameters (CV MAE: ${servicePred.cvMAE} hrs average validation error).`;
+            } else if (servicePred.status === 'predicted' && servicePred.predictedHours) {
+              serviceDescEl.textContent = `Empirical warehouse prep time: ~${servicePred.predictedHours} hours based on median completed orders.`;
+            } else {
+              serviceDescEl.textContent = 'Operational baseline for warehouse preparation lead time before pickup or delivery dispatch.';
+            }
+          }
+          if (serviceMethodEl) {
+            serviceMethodEl.textContent = servicePred.method || (isFallback ? 'Baseline operational default' : 'Ridge Regression (L2 Regularized)');
+          }
+          if (serviceSampleCountEl) {
+            if (Number(servicePred.observationCount) === 0) {
+              serviceSampleCountEl.textContent = 'Based on 0 valid completed orders.';
+            } else if (isTrainedML) {
+              serviceSampleCountEl.textContent = `${servicePred.sampleCount} completed orders (${servicePred.excludedAnomalies || 0} anomalies excluded)`;
+            } else {
+              serviceSampleCountEl.textContent = `${servicePred.observationCount} completed orders (insufficient to train regression)`;
+            }
+          }
+          if (serviceDisclaimerEl) {
+            serviceDisclaimerEl.textContent = servicePred.confidenceNote || 'This estimate is based on past order milestones. Actual preparation time may vary.';
+          }
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. Experimental AI Variety Demand Forecast (Poisson GLM)
+        // ---------------------------------------------------------------------
+        const demandVarietyEl = document.getElementById('ai-demand-variety-tag');
+        const demandHeadlineEl = document.getElementById('ai-demand-headline');
+        const demandStatusNoteEl = document.getElementById('ai-demand-status-note');
+        const demandDescEl = document.getElementById('ai-demand-desc');
+        const demandStatusBadgeEl = document.getElementById('ai-demand-status-badge');
+        const demandHorizonEl = document.getElementById('ai-demand-horizon');
+        const demandUncertaintyEl = document.getElementById('ai-demand-uncertainty');
+        const demandReadinessMetricsEl = document.getElementById('ai-demand-readiness-metrics');
+        const demandDisclaimerEl = document.getElementById('ai-demand-disclaimer');
+
+        if (demandVarietyEl) demandVarietyEl.textContent = targetVarietyName;
+
+        try {
+          // Use verified, reliable coverage period for AI horizon
+          let verifiedHorizon = 30;
+          try {
+            const periodInfo = typeof getReplenishmentPeriodRange === 'function' ? getReplenishmentPeriodRange() : null;
+            const days = periodInfo && Number.isFinite(periodInfo.coverageDays) ? Math.round(periodInfo.coverageDays) : null;
+            if (days && days >= 1 && days <= 365) {
+              verifiedHorizon = days;
+            }
+          } catch (e) {
+            verifiedHorizon = 30;
+          }
+
+          if (demandHorizonEl) {
+            demandHorizonEl.textContent = `${verifiedHorizon} Days (Selected Coverage)`;
+          }
+
+          const liveOrders = typeof getAllOrders === 'function' ? getAllOrders() : [];
+          const waitingRes = targetProduct ? Math.max(0, Number(targetProduct.reservedStock || 0)) : 0;
+
+          let demandModel = null;
+          if (typeof trainProductDemandModel === 'function') {
+            demandModel = trainProductDemandModel(liveOrders, targetVarietyId, {
+              waitingReservations: waitingRes
+            });
+          }
+
+          let demandPred = null;
+          if (demandModel && typeof predictProductDemand === 'function') {
+            demandPred = predictProductDemand(demandModel, verifiedHorizon, {
+              waitingReservations: waitingRes
+            });
+          }
+
+          // Strict gate: display AI forecast only when model returns forecastReady === true,
+          // isPredicted === true, isFallback === false, and valid finite forecast value.
+          const isTrainedAndReady = Boolean(
+            demandModel &&
+            demandModel.status === 'trained' &&
+            demandModel.forecastReady === true &&
+            demandPred &&
+            demandPred.status === 'predicted' &&
+            demandPred.forecastReady === true &&
+            demandPred.isPredicted === true &&
+            demandPred.isFallback === false &&
+            Number.isFinite(demandPred.predictedSacks) &&
+            demandPred.predictedSacks >= 0
+          );
+
+          if (isTrainedAndReady) {
+            if (demandHeadlineEl) {
+              demandHeadlineEl.textContent = `~${demandPred.predictedSacks} sacks`;
+            }
+            if (demandStatusNoteEl) {
+              demandStatusNoteEl.textContent = `Expected continuous demand: ~${demandPred.expectedContinuousSacks} sacks (~${demandPred.dailyRateEstimate} sacks/day) over ${verifiedHorizon} days.`;
+              demandStatusNoteEl.className = 'text-xs font-semibold text-purple-700 dark:text-purple-400 mt-0.5';
+            }
+            if (demandDescEl) {
+              demandDescEl.textContent = `Trained Poisson GLM demand forecast based on historical sales momentum and ${waitingRes} waiting reservation sacks.`;
+            }
+            if (demandStatusBadgeEl) {
+              demandStatusBadgeEl.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Trained (Advisory Only)</span>`;
+            }
+            if (demandUncertaintyEl) {
+              const ci = demandPred.confidenceInterval;
+              demandUncertaintyEl.textContent = ci
+                ? `${ci.lowerBound} to ${ci.upperBound} sacks (Uncalibrated theoretical Poisson dispersion bound)`
+                : 'Uncalibrated theoretical Poisson dispersion bound';
+              demandUncertaintyEl.title = 'Theoretical normal approximation to Poisson distribution: sum(lambda) +/- 1.96*sqrt(sum(lambda)). Not empirically calibrated.';
+            }
+            if (demandReadinessMetricsEl) {
+              const m = demandModel.readiness?.metrics;
+              demandReadinessMetricsEl.textContent = m
+                ? `${m.distinctOrders} orders, ${m.nonZeroSalesDays} sales days, ${m.inStockDays} in-stock days`
+                : `${demandModel.sampleCount || 0} observations`;
+            }
+            if (demandDisclaimerEl) {
+              demandDisclaimerEl.textContent = 'Experimental & advisory only. Forecast uses provisional readiness thresholds; does not guarantee real-world accuracy or allocate stock.';
+            }
+          } else {
+            // Insufficient data or unready model: show neutral message and exact missing criteria; NO fabricated numbers
+            const readiness = demandModel?.readiness;
+            const metrics = readiness?.metrics;
+            const thresholds = readiness?.thresholds;
+
+            if (demandHeadlineEl) {
+              demandHeadlineEl.textContent = 'Not Enough Sales Yet';
+            }
+            if (demandStatusNoteEl) {
+              demandStatusNoteEl.textContent = 'More verified sales history is needed before a sales guess can be made for this variety.';
+              demandStatusNoteEl.className = 'text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5';
+            }
+            if (demandDescEl) {
+              demandDescEl.textContent = 'Requires more verified sales orders across distinct days before a sales guess can be made.';
+            }
+            if (demandStatusBadgeEl) {
+              demandStatusBadgeEl.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Not Enough Sales Yet</span>`;
+            }
+            if (demandUncertaintyEl) {
+              demandUncertaintyEl.textContent = 'None (Waiting for more sales)';
+              demandUncertaintyEl.title = 'Uncertainty intervals require a trained model and remain uncalibrated when trained.';
+            }
+            if (demandReadinessMetricsEl) {
+              if (metrics && thresholds) {
+                demandReadinessMetricsEl.textContent = `Orders: ${metrics.distinctOrders}/${thresholds.minDistinctOrders} | Active days: ${metrics.nonZeroSalesDays}/${thresholds.minNonZeroSalesDays}`;
+              } else {
+                demandReadinessMetricsEl.textContent = 'Not enough sales yet';
+              }
+            }
+            if (demandDisclaimerEl) {
+              demandDisclaimerEl.textContent = 'Still testing. Operational stock needs use the estimate based on past sales in the table above.';
+            }
+          }
+        } catch (err) {
+          console.warn('[RiceFlow] Error evaluating experimental demand model:', err);
+          if (demandHeadlineEl) demandHeadlineEl.textContent = 'Not Enough Sales Yet';
+          if (demandStatusNoteEl) {
+            demandStatusNoteEl.textContent = 'Demand model evaluation temporarily unavailable. Standard replenishment calculations remain active.';
+            demandStatusNoteEl.className = 'text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5';
+          }
+          if (demandStatusBadgeEl) {
+            demandStatusBadgeEl.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Not Enough Sales Yet</span>`;
+          }
+          if (demandUncertaintyEl) demandUncertaintyEl.textContent = 'None (Waiting for more sales)';
+        }
+      }
+
+      // Popover Calendar Logic
+      const selAnalysisPeriod = document.getElementById('sel-analysis-period');
+      const filterReplenish = document.getElementById('sel-replenish-filter');
+      const btnSrgCustomRange = document.getElementById('btn-srg-custom-range');
+      const srgCustomRangeLabel = document.getElementById('srg-custom-range-label');
+      const srgCalPopover = document.getElementById('srg-calendar-popover');
+      const btnCloseSrgCal = document.getElementById('btn-close-srg-cal');
+      const btnCancelSrgCustom = document.getElementById('btn-cancel-srg-custom');
+      const btnApplySrgCustom = document.getElementById('btn-apply-srg-custom');
+      const btnSrgCalPrev = document.getElementById('btn-srg-cal-prev');
+      const btnSrgCalNext = document.getElementById('btn-srg-cal-next');
+      const srgCalMonthYear = document.getElementById('srg-cal-month-year');
+      const srgCalDaysGrid = document.getElementById('srg-cal-days-grid');
+      const srgCalStartSlot = document.getElementById('srg-cal-start-slot');
+      const srgCalEndSlot = document.getElementById('srg-cal-end-slot');
+      const srgCalStartDisplay = document.getElementById('srg-cal-start-display');
+      const srgCalEndDisplay = document.getElementById('srg-cal-end-display');
+      const srgCalStepHint = document.getElementById('srg-cal-step-hint');
+
+      function updateSrgCustomRangeButtonUI() {
+        if (!btnSrgCustomRange || !srgCustomRangeLabel) return;
+        if (replenishPeriod === 'custom' && replenishCustomStart && replenishCustomEnd) {
+          srgCustomRangeLabel.textContent = formatCompactCustomRangeLabel(replenishCustomStart, replenishCustomEnd);
+          btnSrgCustomRange.classList.remove('ia-date-btn-default');
+          btnSrgCustomRange.classList.add('ia-date-btn-active');
+        } else {
+          srgCustomRangeLabel.textContent = 'Custom Date Range';
+          btnSrgCustomRange.classList.remove('ia-date-btn-active');
+          btnSrgCustomRange.classList.add('ia-date-btn-default');
+        }
+      }
+
+      function drawSrgRangeCalendar() {
+        if (!srgCalMonthYear || !srgCalDaysGrid) return;
+        const year = srgCalViewDate.getFullYear();
+        const month = srgCalViewDate.getMonth();
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        srgCalMonthYear.textContent = `${months[month]} ${year}`;
+
+        if (srgCalStartDisplay) {
+          srgCalStartDisplay.textContent = draftSrgStart ? formatYMDReadableShort(draftSrgStart, true) : 'Select start';
+        }
+        if (srgCalEndDisplay) {
+          srgCalEndDisplay.textContent = draftSrgEnd ? formatYMDReadableShort(draftSrgEnd, true) : 'Select end';
+        }
+
+        if (srgCalStepHint) {
+          if (!draftSrgStart) {
+            srgCalStepHint.textContent = '1. Click a starting date';
+          } else if (!draftSrgEnd) {
+            srgCalStepHint.textContent = '2. Click an ending date';
+          } else {
+            srgCalStepHint.textContent = 'Range selected. Click Apply to confirm.';
+          }
+        }
+
+        srgCalDaysGrid.innerHTML = '';
+        const firstDayIdx = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDayIdx; i++) {
+          const blank = document.createElement('div');
+          blank.className = 'h-8';
+          srgCalDaysGrid.appendChild(blank);
+        }
+
+        const todayYMD = formatYMD(new Date());
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const cellDate = new Date(year, month, d);
+          const cellYMD = formatYMD(cellDate);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'h-8 w-8 mx-auto rounded-lg flex items-center justify-center transition-all cursor-pointer font-bold';
+          btn.textContent = d;
+
+          const isStart = draftSrgStart === cellYMD;
+          const isEnd = draftSrgEnd === cellYMD;
+          const isInRange = draftSrgStart && draftSrgEnd && cellYMD > draftSrgStart && cellYMD < draftSrgEnd;
+
+          if (isStart || isEnd) {
+            btn.className += ' bg-[#1E6C02] text-white shadow-xs';
+          } else if (isInRange) {
+            btn.className += ' bg-emerald-100 dark:bg-emerald-950/60 text-[#145001] dark:text-emerald-300';
+          } else if (cellYMD === todayYMD) {
+            btn.className += ' border border-emerald-400 text-[#1E6C02] dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800';
+          } else {
+            btn.className += ' text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800';
+          }
+
+          btn.addEventListener('click', () => {
+            if (srgPickingStep === 'start' || !draftSrgStart || (draftSrgStart && draftSrgEnd)) {
+              draftSrgStart = cellYMD;
+              draftSrgEnd = '';
+              srgPickingStep = 'end';
+            } else {
+              if (cellYMD < draftSrgStart) {
+                draftSrgEnd = draftSrgStart;
+                draftSrgStart = cellYMD;
+              } else {
+                draftSrgEnd = cellYMD;
+              }
+              srgPickingStep = 'start';
+            }
+            drawSrgRangeCalendar();
+          });
+
+          srgCalDaysGrid.appendChild(btn);
+        }
+      }
+
+      function openSrgCalendarPopover() {
+        if (!srgCalPopover) return;
+        draftSrgStart = replenishCustomStart || '';
+        draftSrgEnd = replenishCustomEnd || '';
+        srgPickingStep = draftSrgStart && !draftSrgEnd ? 'end' : 'start';
+        srgCalViewDate = draftSrgStart ? new Date(draftSrgStart) : new Date();
+        srgCalPopover.classList.remove('hidden');
+        drawSrgRangeCalendar();
+      }
+
+      function closeSrgCalendarPopover(restoreSelectIfUnset = true) {
+        if (!srgCalPopover) return;
+        srgCalPopover.classList.add('hidden');
+        if (restoreSelectIfUnset && selAnalysisPeriod && selAnalysisPeriod.value === 'custom' && replenishPeriod !== 'custom') {
+          selAnalysisPeriod.value = replenishPeriod || '30d';
+        }
+      }
+
+      if (btnSrgCustomRange) {
+        btnSrgCustomRange.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (srgCalPopover && !srgCalPopover.classList.contains('hidden')) {
+            closeSrgCalendarPopover(false);
+          } else {
+            openSrgCalendarPopover();
+          }
+        });
+      }
+
+      if (btnCloseSrgCal) btnCloseSrgCal.addEventListener('click', () => closeSrgCalendarPopover(true));
+      if (btnCancelSrgCustom) btnCancelSrgCustom.addEventListener('click', () => closeSrgCalendarPopover(true));
+
+      if (btnSrgCalPrev) {
+        btnSrgCalPrev.addEventListener('click', () => {
+          srgCalViewDate.setMonth(srgCalViewDate.getMonth() - 1);
+          drawSrgRangeCalendar();
+        });
+      }
+
+      if (btnSrgCalNext) {
+        btnSrgCalNext.addEventListener('click', () => {
+          srgCalViewDate.setMonth(srgCalViewDate.getMonth() + 1);
+          drawSrgRangeCalendar();
+        });
+      }
+
+      if (srgCalStartSlot) {
+        srgCalStartSlot.addEventListener('click', () => {
+          srgPickingStep = 'start';
+          if (srgCalStepHint) srgCalStepHint.textContent = '1. Click a starting date';
+        });
+      }
+
+      if (srgCalEndSlot) {
+        srgCalEndSlot.addEventListener('click', () => {
+          srgPickingStep = 'end';
+          if (srgCalStepHint) srgCalStepHint.textContent = '2. Click an ending date';
+        });
+      }
+
+      if (btnApplySrgCustom) {
+        btnApplySrgCustom.addEventListener('click', () => {
+          let sVal = draftSrgStart;
+          let eVal = draftSrgEnd || draftSrgStart;
+          if (!sVal) {
+            showToast('Please pick at least a start date');
+            return;
+          }
+          if (eVal < sVal) {
+            const tmp = sVal;
+            sVal = eVal;
+            eVal = tmp;
+          }
+          replenishCustomStart = sVal;
+          replenishCustomEnd = eVal;
+          if (selAnalysisPeriod) selAnalysisPeriod.value = 'custom';
+          replenishPeriod = 'custom';
+          updateSrgCustomRangeButtonUI();
+          closeSrgCalendarPopover(false);
+          renderStockReplenishmentGuide();
+          showToast(`Filtered to ${formatCompactCustomRangeLabel(sVal, eVal)}`);
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (!srgCalPopover || srgCalPopover.classList.contains('hidden')) return;
+        if (!srgCalPopover.contains(e.target) && (!btnSrgCustomRange || !btnSrgCustomRange.contains(e.target))) {
+          closeSrgCalendarPopover(true);
+        }
+      });
+
+      if (selAnalysisPeriod) {
+        selAnalysisPeriod.addEventListener('change', () => {
+          if (selAnalysisPeriod.value === 'custom') {
+            openSrgCalendarPopover();
+          } else {
+            replenishPeriod = selAnalysisPeriod.value;
+            replenishCustomStart = '';
+            replenishCustomEnd = '';
+            updateSrgCustomRangeButtonUI();
+            closeSrgCalendarPopover(false);
+            renderStockReplenishmentGuide();
+          }
+        });
+      }
+
+      if (filterReplenish) {
+        filterReplenish.addEventListener('change', () => {
+          replenishFilter = filterReplenish.value;
+          renderStockReplenishmentGuide();
+        });
+      }
+
+      // Independent rice variety filter for Expected Stock & Delivery Timing section
+      const selAiProd = document.getElementById('sel-ai-stock-product');
+      if (selAiProd) {
+        selAiProd.addEventListener('change', () => {
+          aiSectionProductFilter = selAiProd.value;
+          // Updates only the Expected Stock & Delivery Timing section
+          updateAiPredictionSection(aiSectionProductFilter);
+        });
+      }
+
+      // Initial Render
+      updateSrgCustomRangeButtonUI();
+      renderStockReplenishmentGuide();
+      window.addEventListener('aurora-sync-event', renderStockReplenishmentGuide);
+      window.addEventListener('aurora-orders-updated', renderStockReplenishmentGuide);
+      window.addEventListener('storage', renderStockReplenishmentGuide);
+    });
+  </script>
+</body>
+</html>
