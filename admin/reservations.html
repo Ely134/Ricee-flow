@@ -332,21 +332,43 @@
   <style id="auth-guard-style">body { visibility: hidden !important; }</style>
 
   <style id="riceflow-reservation-filter-mobile-fix">
-    /* Keep reservation status filters readable; scroll only this tab strip on narrow screens. */
-    #admin-layout-container .reservation-filter-scroll,
-    #admin-layout-container .w-full.lg\:w-auto.overflow-x-auto {
-      max-width: 100% !important; min-width: 0 !important; overflow-x: auto !important;
-      overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important;
-      overscroll-behavior-x: contain !important;
+    /* Wrap status filters cleanly on mobile/tablet while keeping compact single-row strip on desktop */
+    #admin-layout-container .reservation-filter-wrap {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      width: 100% !important;
+      min-width: 0 !important;
     }
     #admin-layout-container .btn-filter-click {
-      flex: 0 0 auto !important; min-height: 40px !important; white-space: nowrap !important;
-      word-break: keep-all !important; overflow-wrap: normal !important;
-      padding-left: 14px !important; padding-right: 14px !important;
+      flex: 1 1 auto !important;
+      min-height: 44px !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-wrap: normal !important;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+      justify-content: center !important;
+    }
+    @media (min-width: 1024px) {
+      #admin-layout-container .reservation-filter-scroll {
+        max-width: 100% !important; min-width: 0 !important; overflow-x: auto !important;
+        overflow-y: hidden !important; -webkit-overflow-scrolling: touch !important;
+      }
+      #admin-layout-container .reservation-filter-wrap {
+        display: inline-flex !important;
+        flex-wrap: nowrap !important;
+        width: auto !important;
+        min-width: max-content !important;
+      }
+      #admin-layout-container .btn-filter-click {
+        flex: 0 0 auto !important;
+        min-height: 40px !important;
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+      }
     }
     @media (max-width: 640px) {
-      #admin-layout-container .w-full.lg\:w-auto.overflow-x-auto { padding-bottom: 8px !important; }
-      #admin-layout-container .btn-filter-click { font-size: 12px !important; }
+      #admin-layout-container .btn-filter-click { font-size: 13px !important; }
     }
   </style>
   <style id="reservation-table-visual-polish">
@@ -552,14 +574,41 @@
 }
 #admin-layout-container > #admin-right-workspace > header { gap: 12px; }
 
-/* Contained horizontal scroll area for table: prevents page spillover and stops column squeezing */
+/* Contained horizontal scroll area for desktop table: prevents page spillover and stops column squeezing */
 #admin-layout-container #reservation-table-card {
   width: 100% !important; max-width: 100% !important; min-width: 0 !important;
 }
 #admin-layout-container #reservation-table-container {
-  display: block !important; width: 100% !important; max-width: 100% !important;
+  width: 100% !important; max-width: 100% !important;
   min-width: 0 !important; overflow-x: auto !important; overflow-y: visible !important;
   -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+}
+@media (min-width: 1024px) {
+  #admin-layout-container #reservation-table-container {
+    display: block !important;
+  }
+}
+@media (max-width: 1023px) {
+  #admin-layout-container #reservation-table-container {
+    display: none !important;
+  }
+  #admin-layout-container #queue-cards-body .btn-manage-reservation,
+  #admin-layout-container #queue-cards-body .btn-review-payment,
+  #admin-layout-container #queue-cards-body .btn-ready-manage-reservation,
+  #admin-layout-container #queue-cards-body .btn-reservation-audit {
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 44px !important;
+    height: auto !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  #admin-layout-container #queue-cards-body .btn-reservation-audit {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    border: 1px solid #111111 !important;
+  }
 }
 #admin-layout-container #reservation-queue-table {
   width: 100% !important; min-width: 960px !important;
@@ -581,6 +630,56 @@
   white-space: nowrap !important; flex-shrink: 0 !important;
 }
 #details-modal-box { width: min(100%, 1152px) !important; max-width: calc(100vw - 24px) !important; max-height: calc(100dvh - 24px) !important; overflow-y: auto !important; }
+@media (max-width: 767px) {
+  #details-modal-box > div[class*="border-t"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.625rem !important;
+    width: 100% !important;
+  }
+  #details-modal-box > div[class*="border-t"] > div {
+    display: contents !important;
+  }
+  #details-modal-box > div[class*="border-t"] > div > div.inline-flex {
+    order: 0 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  #details-modal-box > div[class*="border-t"] button:not(.hidden),
+  #details-modal-box > div[class*="border-t"] a:not(.hidden) {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 46px !important;
+    height: auto !important;
+    padding: 0.75rem 1rem !important;
+    margin: 0 !important;
+    flex: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+  #details-modal-box > div[class*="border-t"] #btn-det-action-approve-and-verify,
+  #details-modal-box > div[class*="border-t"] #btn-det-action-approve,
+  #details-modal-box > div[class*="border-t"] #btn-det-action-verify-payment,
+  #details-modal-box > div[class*="border-t"] #btn-det-action-process,
+  #details-modal-box > div[class*="border-t"] a[href="orders.html"] {
+    order: 1 !important;
+  }
+  #details-modal-box > div[class*="border-t"] #btn-det-action-reject-payment {
+    order: 2 !important;
+  }
+  #details-modal-box > div[class*="border-t"] #btn-det-action-cancel {
+    order: 3 !important;
+  }
+  #details-modal-box > div[class*="border-t"] #btn-details-close-bottom {
+    order: 4 !important;
+  }
+}
 @media (max-width: 1024px) {
   #admin-layout-container > #admin-right-workspace > header { min-height: 68px; height: auto; padding: 12px 16px; }
   #admin-layout-container > #admin-right-workspace > header h2 { font-size: 21px !important; line-height: 1.25 !important; }
@@ -590,6 +689,25 @@
   #admin-main-content { padding: 14px 12px !important; }
   #reservation-queue-table th, #reservation-queue-table td { padding: 12px 10px !important; }
   #details-modal-box { padding: 16px !important; }
+}
+#reservation-audit-modal > div {
+  width: min(calc(100vw - 24px), 760px) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 auto !important;
+}
+@media (min-width: 640px) {
+  #reservation-audit-modal > div {
+    max-height: calc(100dvh - 40px) !important;
+  }
+}
+#reservation-audit-timeline,
+#reservation-audit-timeline * {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
   </style>
@@ -691,6 +809,68 @@
     #admin-layout-container #reservation-queue-table tbody tr.res-row-ready td:nth-child(5) .btn-ready-manage-reservation:focus-visible {
       outline: 3px solid #15803D !important;
       outline-offset: 2px !important;
+    }
+    /* Matching scoped styling for READY mobile/tablet cards */
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-queue-badge {
+      background-color: #FAF5FF !important;
+      border: 1px solid #E9D5FF !important;
+      color: #6B21A8 !important;
+      border-radius: 0.75rem !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-queue-badge .queue-num-badge {
+      color: #6B21A8 !important;
+      font-weight: 700 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .customer-name-text {
+      font-weight: 700 !important;
+      color: #111827 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-phone-text {
+      color: #374151 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-qty-badge {
+      background-color: #F3F4F6 !important;
+      border: 1px solid #D1D5DB !important;
+      color: #111827 !important;
+      border-radius: 0.75rem !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-status-pill {
+      background-color: #ECFDF5 !important;
+      border: 1px solid #6EE7B7 !important;
+      color: #065F46 !important;
+      border-radius: 9999px !important;
+      font-weight: 600 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-status-dot {
+      width: 12px !important;
+      height: 12px !important;
+      border-radius: 9999px !important;
+      background-color: #22C55E !important;
+      border: 1.25px solid #14532D !important;
+      display: inline-block !important;
+      flex-shrink: 0 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-allocated-text {
+      color: #047857 !important;
+      font-weight: 700 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .ready-eta-text {
+      color: #111827 !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .btn-ready-manage-reservation {
+      color: #FFFFFF !important;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 40%, rgba(255, 255, 255, 0) 50%),
+        linear-gradient(180deg, #2EC420 0%, #22AD17 38%, #199410 72%, #137C0B 100%) !important;
+      background-color: #199410 !important;
+      border: 1px solid #157F0D !important;
+      border-top-color: #46D438 !important;
+      border-bottom-color: #0F6308 !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(21, 128, 61, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22) !important;
+    }
+    #admin-layout-container #queue-cards-body .res-card-ready .btn-ready-manage-reservation * {
+      color: #FFFFFF !important;
     }
     #details-modal-box .ready-payment-proof-card {
       background: #F8FAFC;
@@ -816,16 +996,16 @@
   </div>
 
   <!-- RESERVATION AUDIT LOG MODAL -->
-  <div id="reservation-audit-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[65] flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="reservation-audit-title">
-    <div class="bg-white dark:bg-[#111827] w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl p-5 sm:p-6">
-      <div class="flex items-start justify-between gap-4 border-b border-gray-200 dark:border-slate-700 pb-4 mb-4">
-        <div>
-          <h3 id="reservation-audit-title" class="text-xl font-black text-gray-950 dark:text-white">Reservation Audit Log</h3>
-          <p id="reservation-audit-subtitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1"></p>
+  <div id="reservation-audit-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[65] flex items-center justify-center p-3 sm:p-5 hidden overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="reservation-audit-title">
+    <div class="bg-white dark:bg-[#111827] w-[min(calc(100vw-24px),760px)] max-w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] sm:max-h-[calc(100dvh-40px)] flex flex-col overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl p-4 sm:p-6 mx-auto">
+      <div class="flex items-start justify-between gap-3 border-b border-gray-200 dark:border-slate-700 pb-4 mb-4 shrink-0">
+        <div class="min-w-0 flex-1">
+          <h3 id="reservation-audit-title" class="text-lg sm:text-xl font-black text-gray-950 dark:text-white leading-snug break-words">Reservation Audit Log</h3>
+          <p id="reservation-audit-subtitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1 break-words"></p>
         </div>
-        <button type="button" id="btn-close-reservation-audit" class="shrink-0 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 font-bold hover:bg-gray-100 dark:hover:bg-slate-800">Close</button>
+        <button type="button" id="btn-close-reservation-audit" class="shrink-0 whitespace-nowrap min-h-[40px] px-3.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 font-bold hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer">Close</button>
       </div>
-      <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl p-4 sm:p-5">
+      <div class="bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700 rounded-xl p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <h4 class="font-black text-gray-950 dark:text-white mb-4">History &amp; Timeline</h4>
         <div id="reservation-audit-timeline"></div>
       </div>
@@ -1154,8 +1334,8 @@
       }
 
       function updateStatusFilterButtonsUI(activeFilter) {
-        const activeClass = "h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all btn-filter-click active bg-white text-[#1E6C02] shadow-xs border border-gray-300/80 ring-1 ring-[#1E6C02]/20 cursor-pointer whitespace-nowrap shrink-0";
-        const inactiveClass = "h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0";
+        const activeClass = "min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all btn-filter-click active bg-white text-[#1E6C02] shadow-xs border border-gray-300/80 ring-1 ring-[#1E6C02]/20 cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center";
+        const inactiveClass = "min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center";
 
         document.querySelectorAll('.btn-filter-click').forEach(b => {
           if (b.getAttribute('data-filter') === activeFilter) {
@@ -1844,22 +2024,22 @@
                 </div>
               </div>
 
-              <!-- Right: Segmented Status Filters with Contained Horizontal Scroll -->
-              <div class="w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 scrollbar-thin shrink-0">
-                <div class="inline-flex bg-gray-100 p-1.5 rounded-xl border border-gray-200/90 gap-1.5 shrink-0 min-w-max items-center">
-                  <button data-filter="all" class="h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all btn-filter-click active bg-white text-[#1E6C02] shadow-xs border border-gray-300/80 ring-1 ring-[#1E6C02]/20 cursor-pointer whitespace-nowrap shrink-0">
+              <!-- Right: Wrapped Responsive Status Filters (Desktop single strip) -->
+              <div class="w-full lg:w-auto reservation-filter-scroll shrink-0">
+                <div class="reservation-filter-wrap bg-gray-100 p-1.5 rounded-xl border border-gray-200/90 gap-1.5 items-center">
+                  <button data-filter="all" class="min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold transition-all btn-filter-click active bg-white text-[#1E6C02] shadow-xs border border-gray-300/80 ring-1 ring-[#1E6C02]/20 cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
                     All
                   </button>
-                  <button data-filter="waiting" class="h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0">
+                  <button data-filter="waiting" class="min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
                     Waiting
                   </button>
-                  <button data-filter="payment_verification" class="h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0">
+                  <button data-filter="payment_verification" class="min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
                     Payment Review
                   </button>
-                  <button data-filter="ready" class="h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0">
+                  <button data-filter="ready" class="min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
                     Ready
                   </button>
-                  <button data-filter="cancelled" class="h-10 px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0">
+                  <button data-filter="cancelled" class="min-h-[44px] lg:min-h-0 lg:h-10 px-3.5 lg:px-4 rounded-lg text-xs sm:text-[13px] font-bold text-gray-700 hover:text-gray-950 hover:bg-gray-200/60 transition-all btn-filter-click border border-transparent cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
                     Cancelled
                   </button>
                 </div>
@@ -1867,10 +2047,15 @@
             </div>
           </div>
 
-          <!-- RESERVATION QUEUE TABLE CARD -->
-          <div id="reservation-table-card" class="bg-white dark:bg-[#111827] rounded-2xl border border-gray-200/90 dark:border-slate-800 shadow-xs relative">
-            <!-- TABLE CONTAINER -->
-            <div id="reservation-table-container" class="overflow-x-auto w-full rounded-b-2xl scrollbar-thin">
+          <!-- RESERVATION QUEUE TABLE & MOBILE CARDS -->
+          <div id="reservation-table-card" class="bg-white dark:bg-[#111827] rounded-2xl border border-gray-200/90 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <!-- MOBILE & TABLET CARDS VIEW -->
+            <div id="queue-cards-body" class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3.5 sm:p-4">
+              <!-- Rendered dynamically -->
+            </div>
+
+            <!-- DESKTOP TABLE CONTAINER -->
+            <div id="reservation-table-container" class="hidden lg:block overflow-x-auto w-full rounded-b-2xl scrollbar-thin">
               <table id="reservation-queue-table" class="w-full text-left border-collapse min-w-[960px]">
                 <thead>
                   <tr class="bg-gray-50/90 dark:bg-slate-800/80 border-b border-gray-200/90 dark:border-slate-800 text-xs sm:text-[13px] font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
@@ -2192,26 +2377,44 @@
         });
 
         const tbody = document.getElementById('queue-table-body');
+        const cardsBody = document.getElementById('queue-cards-body');
         if (filtered.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="py-16 text-center">
-                <div class="max-w-xs mx-auto text-center space-y-2.5">
-                  <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-center mx-auto text-2xl border border-gray-300 dark:border-slate-700 shadow-2xs">
-                    🌾
-                  </div>
-                  <div>
-                    <p class="text-base font-black text-gray-950 dark:text-white">No reservations found</p>
-                    <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-semibold mt-0.5">There are no reservations matching this filter.</p>
-                  </div>
+          const emptyCardHtml = `
+            <div class="md:col-span-2 py-12 text-center">
+              <div class="max-w-xs mx-auto text-center space-y-2.5">
+                <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-center mx-auto text-2xl border border-gray-300 dark:border-slate-700 shadow-2xs">
+                  🌾
                 </div>
-              </td>
-            </tr>
+                <div>
+                  <p class="text-base font-black text-gray-950 dark:text-white">No reservations found</p>
+                  <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-semibold mt-0.5">There are no reservations matching this filter.</p>
+                </div>
+              </div>
+            </div>
           `;
+          if (cardsBody) cardsBody.innerHTML = emptyCardHtml;
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="py-16 text-center">
+                  <div class="max-w-xs mx-auto text-center space-y-2.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-center mx-auto text-2xl border border-gray-300 dark:border-slate-700 shadow-2xs">
+                      🌾
+                    </div>
+                    <div>
+                      <p class="text-base font-black text-gray-950 dark:text-white">No reservations found</p>
+                      <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-semibold mt-0.5">There are no reservations matching this filter.</p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }
           return;
         }
 
-        tbody.innerHTML = filtered.map((order, idx) => {
+        const mobileCardsHtmlList = [];
+        const desktopRowsHtml = filtered.map((order, idx) => {
           const pos = getQueuePosition(order);
           const mainItem = order.items[0] || {};
           const productName = mainItem.product?.name || 'N/A';
@@ -2614,6 +2817,112 @@
 
           const altRowClass = idx % 2 === 0 ? 'res-row-even' : 'res-row-odd';
 
+          // Mobile & Tablet card action buttons (touch-friendly layout)
+          let mobilePrimaryActionHtml = '';
+          if (isReadyTabRow) {
+            mobilePrimaryActionHtml = `
+              <button
+                data-id="${order.id}"
+                class="btn-view-details btn-ready-manage-reservation flex-1 min-h-[44px] inline-flex items-center justify-center font-semibold rounded-xl px-4 py-2.5 cursor-pointer text-[14px] text-center"
+              >
+                Manage Reservation
+              </button>
+            `;
+          } else if (isReady || isWaiting || (!isFulfillment && !isReuploadWaiting && !isPaymentVerification)) {
+            mobilePrimaryActionHtml = `
+              <button
+                data-id="${order.id}"
+                class="btn-view-details btn-manage-reservation flex-1 min-h-[44px] inline-flex items-center justify-center font-semibold rounded-xl px-4 py-2.5 cursor-pointer text-[14px] text-center"
+              >
+                Manage Reservation
+              </button>
+            `;
+          } else if (isFulfillment) {
+            mobilePrimaryActionHtml = `
+              <a
+                href="orders.html"
+                class="flex-1 min-h-[44px] px-4 py-2.5 inline-flex items-center justify-center border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 hover:bg-blue-100 text-[13.5px] font-semibold rounded-xl transition-all text-center shadow-2xs"
+              >
+                View in Orders
+              </a>
+            `;
+          } else if (isReuploadWaiting) {
+            mobilePrimaryActionHtml = `
+              <button
+                data-id="${order.id}"
+                class="btn-view-details flex-1 min-h-[44px] inline-flex items-center justify-center bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl px-4 py-2.5 transition-all cursor-pointer shadow-xs text-[13.5px] text-center"
+              >
+                Review Status
+              </button>
+            `;
+          } else if (isPaymentVerification) {
+            mobilePrimaryActionHtml = `
+              <button
+                data-id="${order.id}"
+                class="btn-view-details btn-review-payment flex-1 min-h-[44px] inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-4 py-2.5 transition-all cursor-pointer shadow-xs text-[13.5px] text-center"
+              >
+                Review Payment
+              </button>
+            `;
+          }
+
+          const waitingEtaHtml = isWaiting ? `
+            <p class="text-[13px] text-gray-800 dark:text-gray-200 leading-snug pt-0.5">
+              <span class="font-semibold text-[#1E6C02] dark:text-emerald-400">${order.deliveryOption === 'pickup' ? 'Est. Pickup' : 'Est. Delivery'}:</span> ${getEstimatedArrivalDate(order)}
+            </p>
+          ` : '';
+
+          mobileCardsHtmlList.push(`
+            <div id="reservation-card-${order.id}" class="${isReadyTabRow ? 'res-card-ready border-[#D7F5DF] bg-white' : (isNext ? 'border-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/15' : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60')} rounded-2xl border p-4 shadow-2xs flex flex-col justify-between gap-3.5 text-left">
+              <div class="space-y-3">
+                <!-- Top row: Queue Badge + Customer + Quantity -->
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${queuePosHtml}
+                    <div class="min-w-0">
+                      <p class="customer-name-text ${isReadyTabRow ? 'font-bold' : 'font-semibold'} text-black dark:text-white text-[15.5px] leading-snug break-words" title="${customerName}">
+                        ${customerName}
+                      </p>
+                      <p class="${isReadyTabRow ? 'ready-phone-text text-gray-700' : 'text-gray-700 dark:text-gray-300'} text-[13px] font-normal leading-tight mt-0.5">
+                        ${order.phone || 'No Phone'}
+                      </p>
+                    </div>
+                  </div>
+                  <span class="${isReadyTabRow ? 'ready-qty-badge' : ''} inline-flex items-center justify-center px-3 py-1 rounded-xl bg-gray-100/90 dark:bg-slate-800/90 border border-gray-300 dark:border-slate-700 text-gray-950 dark:text-white font-semibold text-[14px] shrink-0 whitespace-nowrap">
+                    ${qty} <span class="text-[12.5px] font-normal text-gray-700 dark:text-gray-300 ml-1">Sack${qty > 1 ? 's' : ''}</span>
+                  </span>
+                </div>
+
+                <!-- Rice Variety & Reservation ID -->
+                <div class="flex items-center gap-3 rounded-xl bg-gray-50/90 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700/80 p-2.5">
+                  <img src="${productImg}" alt="${productName}" class="w-11 h-11 rounded-xl object-cover border border-gray-200/80 dark:border-slate-700 shrink-0 shadow-2xs" />
+                  <div class="min-w-0 flex-1">
+                    <p class="product-name-text font-semibold text-black dark:text-white text-[14.5px] leading-snug break-words" title="${productName}">
+                      ${productName}
+                    </p>
+                    <p class="text-[12.5px] font-medium text-gray-700 dark:text-gray-300 leading-tight mt-0.5">
+                      #${order.id || ''} • ${dateStr}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Status + Allocation + Estimated Date -->
+                <div class="space-y-1.5">
+                  ${statusBadge}
+                  ${waitingEtaHtml}
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-gray-100 dark:border-slate-800">
+                ${mobilePrimaryActionHtml}
+                <button type="button" data-audit-id="${order.id}" class="btn-reservation-audit inline-flex items-center justify-center min-h-[44px] px-3.5 border border-gray-800 dark:border-amber-700 bg-white dark:bg-amber-950/50 text-gray-900 dark:text-amber-200 hover:bg-gray-50 text-[12.5px] font-semibold rounded-xl cursor-pointer whitespace-nowrap shrink-0" title="View reservation history and timeline">
+                  Audit Log
+                </button>
+              </div>
+            </div>
+          `);
+
           return `
             <tr id="reservation-row-${order.id}" class="${altRowClass} ${rowBgClass}${isReadyTabRow ? ' res-row-ready' : ''}">
               <!-- Customer + Queue Badge -->
@@ -2661,6 +2970,9 @@
             </tr>
           `;
         }).join('');
+
+        if (tbody) tbody.innerHTML = desktopRowsHtml;
+        if (cardsBody) cardsBody.innerHTML = mobileCardsHtmlList.join('');
 
         // Attach listener for dynamic Details modal open
         document.querySelectorAll('.btn-view-details').forEach(btn => {

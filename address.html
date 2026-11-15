@@ -300,15 +300,27 @@
       protectCustomerPage,
       getCurrentUser,
       updateUser,
-      showToast
+      showToast,
+      assertCanPerformFirebaseWrite
     } from './src/app/shared.js';
+    import {
+      fetchCustomerProfileFromFirestore,
+      auth
+    } from './src/lib/firebase.js';
 
     document.addEventListener('DOMContentLoaded', async () => {
+      const earlyFormEl = document.getElementById('address-form');
+      if (earlyFormEl) {
+        earlyFormEl.addEventListener('submit', (e) => {
+          e.preventDefault();
+        });
+      }
+
       // 1. Authoritative customer authentication guard
       const authResult = await protectCustomerPage();
       if (!authResult || !authResult.ok) return;
 
-      const user = authResult.user || getCurrentUser();
+      let user = authResult.user || getCurrentUser();
       if (!user) return;
 
       // Extract navigation context from URL
@@ -1130,12 +1142,37 @@
         }
       } catch (_) {}
 
-      if (!activePreset && user && user.addressDetails) {
+      // If local user lacks address or addressDetails, probe Firestore authoritatively
+      if (user && (!user.address || !user.addressDetails)) {
+        try {
+          const remoteProf = await fetchCustomerProfileFromFirestore(
+            user.email || auth?.currentUser?.email,
+            user.firebaseUid || user.uid || auth?.currentUser?.uid,
+            user.id
+          );
+          if (remoteProf && (remoteProf.address || remoteProf.addressDetails)) {
+            user = { ...user, ...remoteProf };
+            try { localStorage.setItem('aurora-user', JSON.stringify(user)); } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      if (activePreset && user && user.updatedAt && activePreset.savedAt && new Date(user.updatedAt).getTime() > activePreset.savedAt && user.address) {
         activePreset = {
           userId: currentUserId,
           userEmail: currentUserEmail,
-          addressDetails: user.addressDetails,
-          coordinates: user.coordinates,
+          addressDetails: user.addressDetails || null,
+          coordinates: user.coordinates || null,
+          address: user.address
+        };
+      }
+
+      if (!activePreset && user && (user.addressDetails || user.address)) {
+        activePreset = {
+          userId: currentUserId,
+          userEmail: currentUserEmail,
+          addressDetails: user.addressDetails || null,
+          coordinates: user.coordinates || null,
           address: user.address
         };
       }
@@ -1209,6 +1246,7 @@
       // =========================================================================
       const addressForm = document.getElementById('address-form');
       if (addressForm) {
+        addressForm.dataset.ready = 'true';
         addressForm.addEventListener('submit', async (e) => {
           e.preventDefault();
 
@@ -1305,6 +1343,10 @@
             confirmedAt: new Date().toISOString()
           };
 
+          if (!assertCanPerformFirebaseWrite('save your delivery address')) {
+            return;
+          }
+
           const btnSave = document.getElementById('btn-save-address');
           const btnSaveText = document.getElementById('btn-save-text');
           const origText = btnSaveText ? btnSaveText.textContent : 'Save & Confirm Address';
@@ -1315,18 +1357,7 @@
           }
 
           try {
-            // Save active address into sessionStorage for instant checkout reuse
-            const activeAddressPayload = {
-              userId: currentUserId,
-              userEmail: currentUserEmail,
-              address: fullAddressString,
-              coordinates: { lat, lng },
-              addressDetails: structuredDetails,
-              isConfirmed: true
-            };
-            sessionStorage.setItem('riceflow-active-checkout-address', JSON.stringify(activeAddressPayload));
-
-            // Save to Customer Profile if toggle is checked
+            // 1. Authoritatively persist to Firebase customer profile BEFORE confirming success or updating session caches
             const chkDefault = document.getElementById('chk-set-default-profile');
             if (!chkDefault || chkDefault.checked) {
               await updateUser({
@@ -1336,15 +1367,63 @@
               });
             }
 
+            // 2. Update active checkout session address AFTER Firebase save succeeds
+            const activeAddressPayload = {
+              userId: currentUserId,
+              userEmail: currentUserEmail,
+              address: fullAddressString,
+              coordinates: { lat, lng },
+              addressDetails: structuredDetails,
+              isConfirmed: true,
+              savedAt: Date.now()
+            };
+            sessionStorage.setItem('riceflow-active-checkout-address', JSON.stringify(activeAddressPayload));
+
+            // 3. Synchronize any saved checkout/reservation guide context & drafts so returning never overwrites with stale address
+            try {
+              const rawCtx = sessionStorage.getItem('riceflow-checkout-context');
+              if (rawCtx) {
+                const ctx = JSON.parse(rawCtx);
+                if (ctx && typeof ctx === 'object') {
+                  ctx.address = fullAddressString;
+                  ctx.savedAt = Date.now();
+                  sessionStorage.setItem('riceflow-checkout-context', JSON.stringify(ctx));
+                }
+              }
+            } catch (_) {}
+
+            try {
+              Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('riceflow_draft_')) {
+                  const dRaw = localStorage.getItem(k);
+                  if (dRaw) {
+                    const d = JSON.parse(dRaw);
+                    if (d && d.fields) {
+                      delete d.fields['inp-address'];
+                      delete d.fields['address'];
+                      if (d.customState) {
+                        d.customState.addressVal = fullAddressString;
+                        d.customState.confirmedAddressText = fullAddressString;
+                        d.customState.currentSelectedCoordinates = { lat, lng };
+                        d.customState.isCoordinatesConfirmed = true;
+                      }
+                      d.savedAt = Date.now();
+                      localStorage.setItem(k, JSON.stringify(d));
+                    }
+                  }
+                }
+              });
+            } catch (_) {}
+
             showToast('Delivery address and map pin saved successfully!', 'success');
 
-            // Return to checkout or profile
+            // Return to checkout, reservation, or profile
             setTimeout(() => {
               window.location.href = returnUrl;
-            }, 400);
+            }, 350);
           } catch (saveErr) {
             console.error('[ADDRESS] Error saving address:', saveErr);
-            showToast('Failed to save address. Please check your connection and retry.', 'error');
+            showToast('Failed to save address to database: ' + (saveErr?.message || 'Please check your connection and retry.'), 'error');
             if (btnSave) {
               btnSave.disabled = false;
               if (btnSaveText) btnSaveText.textContent = origText;

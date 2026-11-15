@@ -83,7 +83,7 @@
                   <input type="radio" value="delivery" name="delivery-radio" id="rad-delivery" checked class="h-4 w-4 text-[#1E6C02] focus:ring-[#1E6C02]" />
                   <label for="rad-delivery" class="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 cursor-pointer flex-1 text-sm select-none">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-[#1E6C02] dark:text-emerald-400"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                    <span>Delivery (₱80)</span>
+                    <span>Delivery</span>
                   </label>
                 </div>
 
@@ -312,7 +312,7 @@
                       class="w-full h-full object-contain"
                     />
                   </div>
-                  <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100">Account Name: <span class="text-gray-950 dark:text-white font-extrabold" id="gcash-account-name">Aurora Local Rice</span></h5>
+                  <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100">Account Name: <span class="text-gray-950 dark:text-white font-extrabold" id="gcash-account-name">Mahayag Local Rice</span></h5>
                   <p class="text-xs text-gray-900 dark:text-gray-100 font-bold mt-1">GCash Number: <span class="text-[#1E6C02] dark:text-emerald-400 font-black" id="gcash-number-lbl">0912 345 6789</span></p>
                   
                   <div class="mt-4 bg-[#E2F9E5] dark:bg-emerald-950/60 border border-[#C6EFCE] dark:border-emerald-800/60 py-2 px-4 rounded-xl inline-block">
@@ -711,7 +711,8 @@
       assertCanPerformFirebaseWrite,
       autoBindDraftPreservation,
       clearFormDraft,
-      checkExistingOrderByReference
+      checkExistingOrderByReference,
+      updateUser
     } from './src/app/shared.js';
     import { 
       db,
@@ -719,6 +720,7 @@
       getDoc,
       getDocFromServer,
       auth,
+      fetchCustomerProfileFromFirestore,
       storage,
       storageRef,
       uploadBytes,
@@ -779,6 +781,53 @@
       let confirmedAddressText = '';
       let confirmedAddressDetails = null;
       let confirmedCoordinates = null;
+      let isAddressDirtyByUser = false;
+
+      const toTimestampMs = (v) => (typeof v === 'number' && isFinite(v)) ? v : (v ? (Date.parse(v) || 0) : 0);
+
+      async function hydrateUserAddressFromFirestoreIfMissing() {
+        try {
+          const currentLocal = getCurrentUser() || user;
+          if (!currentLocal) return;
+          const missingAddress = !(currentLocal.address && String(currentLocal.address).trim());
+          const missingDetails = !currentLocal.addressDetails;
+          const missingCoords = !(currentLocal.coordinates && typeof currentLocal.coordinates.lat === 'number');
+          if (!missingAddress && !missingDetails && !missingCoords) return;
+
+          const lookupEmail = currentLocal.email || auth?.currentUser?.email || '';
+          const lookupUid = currentLocal.firebaseUid || currentLocal.uid || auth?.currentUser?.uid || '';
+          const lookupId = currentLocal.id || '';
+          if (!lookupEmail && !lookupUid && !lookupId) return;
+
+          const remoteProfile = await fetchCustomerProfileFromFirestore(lookupEmail, lookupUid, lookupId);
+          if (remoteProfile && remoteProfile.address && String(remoteProfile.address).trim()) {
+            const latestLocal = getCurrentUser() || currentLocal;
+            const localHasNewerAddr = Boolean(
+              latestLocal.address &&
+              String(latestLocal.address).trim() &&
+              toTimestampMs(latestLocal.updatedAt) > toTimestampMs(remoteProfile.updatedAt)
+            );
+            if (!localHasNewerAddr) {
+              const mergedUser = {
+                ...latestLocal,
+                address: remoteProfile.address,
+                coordinates: remoteProfile.coordinates || latestLocal.coordinates || null,
+                addressDetails: remoteProfile.addressDetails || latestLocal.addressDetails || null,
+                updatedAt: remoteProfile.updatedAt || latestLocal.updatedAt || new Date().toISOString()
+              };
+              user = mergedUser;
+              try {
+                localStorage.setItem('aurora-user', JSON.stringify(mergedUser));
+              } catch (_) {}
+              if (!isAddressDirtyByUser && typeof syncCheckoutAddressUI === 'function') {
+                syncCheckoutAddressUI();
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[CHECKOUT] Non-fatal address hydration check error:', err);
+        }
+      }
 
       function hasDeliveryLocationChanged(newAddrStr, originalAddrStr, addressDetails) {
         if (!newAddrStr || !newAddrStr.trim()) return true;
@@ -861,6 +910,13 @@
             }
           }
         } catch (_) {}
+
+        // Prefer saved profile address if it was updated more recently than the session cache and differs
+        const userUpdatedAt = toTimestampMs(user?.updatedAt);
+        const sessionSavedAt = toTimestampMs(sessionAddr?.savedAt);
+        if (sessionAddr && user && user.address && typeof user.address === 'string' && user.address.trim() && userUpdatedAt > sessionSavedAt && String(user.address).trim() !== String(sessionAddr.address || '').trim()) {
+          sessionAddr = null;
+        }
 
         // 2. Fallback to customer's saved profile address if valid coordinates exist
         if (!sessionAddr && user && user.address && user.coordinates && typeof user.coordinates.lat === 'number' && typeof user.coordinates.lng === 'number') {
@@ -972,7 +1028,10 @@
       }
 
       if (inpAddress) {
-        inpAddress.addEventListener('input', () => {
+        inpAddress.addEventListener('input', (e) => {
+          if (e && e.isTrusted) {
+            isAddressDirtyByUser = true;
+          }
           const updatedVal = inpAddress.value;
           const sumAddress = document.getElementById('summary-address-text');
           const badgePinned = document.getElementById('badge-address-pinned');
@@ -1439,10 +1498,24 @@
           updateDeliveryMinimumStatus();
           executePricing();
         }
+        if (e.detail && e.detail.key === 'aurora-user') {
+          const freshUser = getCurrentUser();
+          if (freshUser) {
+            user = freshUser;
+            if (inpFullName && !inpFullName.value.trim() && user.fullName) inpFullName.value = user.fullName;
+            if (inpPhone && !inpPhone.value.trim() && user.phone) inpPhone.value = user.phone;
+            if (!isAddressDirtyByUser) {
+              syncCheckoutAddressUI();
+              if (typeof updateDeliveryMinimumStatus === 'function') updateDeliveryMinimumStatus();
+              if (typeof executePricing === 'function') executePricing();
+            }
+          }
+        }
       });
 
       // Synchronize address UI now that checkoutItems, deliveryOption, and state tracks are ready
       syncCheckoutAddressUI();
+      await hydrateUserAddressFromFirestoreIfMissing();
       isCheckoutReady = true;
 
       executePricing();
@@ -2178,9 +2251,13 @@
           if (ctx.fullName && inpFullName) inpFullName.value = ctx.fullName;
           if (ctx.phone && inpPhone) inpPhone.value = ctx.phone;
           if (ctx.address !== undefined && addressInput) {
-            const hasConfirmedActiveAddress = Boolean(activeCheckoutAddress && activeCheckoutAddress.address && activeCheckoutAddress.isConfirmed);
-            if (!hasConfirmedActiveAddress || (typeof ctx.address === 'string' && ctx.address.trim().length > 0)) {
+            const hasSavedOrActiveAddr = Boolean(
+              (activeCheckoutAddress && activeCheckoutAddress.address && String(activeCheckoutAddress.address).trim()) ||
+              (user && user.address && String(user.address).trim())
+            );
+            if (!hasSavedOrActiveAddr && typeof ctx.address === 'string' && ctx.address.trim().length > 0) {
               addressInput.value = ctx.address;
+              if (typeof syncCheckoutAddressUI === 'function') syncCheckoutAddressUI();
             }
           }
           const inpNotes = document.getElementById('inp-notes');
@@ -2290,19 +2367,26 @@
             } else if (customState.paymentMethod === 'gcash' && divPmGcash) {
               divPmGcash.click();
             }
-            if (customState.addressVal && addressInput && !addressInput.value) {
+            const hasSavedOrActiveAddr = Boolean(
+              (activeCheckoutAddress && activeCheckoutAddress.address && String(activeCheckoutAddress.address).trim()) ||
+              (user && user.address && String(user.address).trim()) ||
+              (addressInput && addressInput.value && addressInput.value.trim())
+            );
+            if (!hasSavedOrActiveAddr && customState.addressVal && addressInput) {
               addressInput.value = customState.addressVal;
+              if (customState.currentSelectedCoordinates && !currentSelectedCoordinates) {
+                currentSelectedCoordinates = customState.currentSelectedCoordinates;
+                isCoordinatesConfirmed = Boolean(customState.isCoordinatesConfirmed);
+              }
+              if (typeof syncCheckoutAddressUI === 'function') syncCheckoutAddressUI();
             }
             const nEl = document.getElementById('inp-notes');
             if (customState.notesVal && nEl && !nEl.value) {
               nEl.value = customState.notesVal;
             }
-            if (customState.currentSelectedCoordinates) {
-              currentSelectedCoordinates = customState.currentSelectedCoordinates;
-              isCoordinatesConfirmed = true;
-            }
           }
-        }
+        },
+        { preserveAddressIfPopulated: true }
       );
 
       // Exit Confirmation Modal wiring

@@ -360,6 +360,24 @@
       color: #D1D5DB !important;
     }
   </style>
+  <style id="riceflow-settings-responsive-css">
+    #admin-main-content, #admin-main-content * { min-width: 0; }
+    .setting-rule-wrap {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    @media (max-width: 1023px) {
+      #admin-main-content { padding: 14px 12px !important; }
+      #admin-layout-container > #admin-right-workspace > header { min-height: 68px; height: auto; padding: 12px 16px; }
+      #admin-layout-container > #admin-right-workspace > header h2 { font-size: 21px !important; line-height: 1.25 !important; }
+    }
+    @media (max-width: 639px) {
+      #admin-main-content .bg-white.rounded-3xl {
+        padding: 18px 16px !important;
+        border-radius: 20px !important;
+      }
+    }
+  </style>
   <style id="auth-guard-style">body { visibility: hidden !important; }</style>
 </head>
 <body class="bg-[#F5F5F5] min-h-screen">
@@ -423,14 +441,32 @@
       let storeName = settings.storeName;
       let description = settings.description;
       let contactNumber = settings.contactNumber;
+      let contactEmail = settings.contactEmail;
+      let supportEmail = settings.supportEmail;
       let storeAddress = settings.storeAddress;
       let facebookLink = settings.facebookLink;
       let businessHours = settings.businessHours;
+      let operatingDays = settings.operatingDays;
       let logoBase64 = settings.logo;
       let bannerBase64 = settings.banner;
       let gcashName = settings.gcashName;
       let gcashNumber = settings.gcashNumber;
       let gcashQrBase64 = settings.gcashQr;
+
+      function escapeHtmlAttr(val) {
+        return String(val ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function escapeHtmlText(val) {
+        return String(val ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
       let deliveryMinimumSettings = JSON.parse(JSON.stringify(settings.deliveryMinimumSettings || DEFAULT_DELIVERY_MINIMUM_SETTINGS));
       let deliveryFeeSettings = JSON.parse(JSON.stringify(settings.deliveryFeeSettings || DEFAULT_DELIVERY_FEE_SETTINGS));
       let editingFeeRuleId = null;
@@ -499,8 +535,17 @@
         const inpContactPhone = document.getElementById('inp-contact-phone');
         if (inpContactPhone) contactNumber = inpContactPhone.value.trim();
 
+        const inpContactEmail = document.getElementById('inp-contact-email');
+        if (inpContactEmail) contactEmail = inpContactEmail.value.trim();
+
+        const inpSupportEmail = document.getElementById('inp-support-email');
+        if (inpSupportEmail) supportEmail = inpSupportEmail.value.trim();
+
         const inpBusinessHours = document.getElementById('inp-business-hours');
         if (inpBusinessHours) businessHours = inpBusinessHours.value.trim();
+
+        const inpOperatingDays = document.getElementById('inp-operating-days');
+        if (inpOperatingDays) operatingDays = inpOperatingDays.value.trim();
 
         const inpFacebookLink = document.getElementById('inp-facebook-link');
         if (inpFacebookLink) facebookLink = inpFacebookLink.value.trim();
@@ -659,20 +704,31 @@
 
       function renderLocationRulesRows() {
         const tbody = document.getElementById('tbody-location-rules');
-        if (!tbody) return;
+        const cardsEl = document.getElementById('cards-location-rules');
+        if (!tbody && !cardsEl) return;
         const rules = deliveryMinimumSettings.locationRules || [];
         if (rules.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="5" class="py-6 text-center text-gray-500 text-xs">
+          if (cardsEl) {
+            cardsEl.innerHTML = `
+              <div class="rounded-2xl border border-gray-200 bg-gray-50/70 py-6 px-4 text-center text-gray-500 text-xs">
                 No custom location rules configured. All delivery locations will use the default minimum (${deliveryMinimumSettings.defaultMinimumSacks || 20} sacks).
-              </td>
-            </tr>
-          `;
+              </div>
+            `;
+          }
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="5" class="py-6 text-center text-gray-500 text-xs">
+                  No custom location rules configured. All delivery locations will use the default minimum (${deliveryMinimumSettings.defaultMinimumSacks || 20} sacks).
+                </td>
+              </tr>
+            `;
+          }
           return;
         }
 
-        tbody.innerHTML = rules.map((r, idx) => {
+        const mobileCardsHtml = [];
+        const desktopRowsHtml = rules.map((r, idx) => {
           const ruleId = r.id || `loc-rule-${idx}`;
           if (!r.id) r.id = ruleId;
           const isEditing = editingLocationRuleId === ruleId;
@@ -681,6 +737,69 @@
           const minVal = Number.isInteger(Number(r.minimumSacks)) ? Number(r.minimumSacks) : (isFar ? deliveryMinimumSettings.farLocationMinimumSacks : deliveryMinimumSettings.defaultMinimumSacks);
 
           if (isEditing) {
+            mobileCardsHtml.push(`
+              <div data-rule-card="${ruleId}" class="rounded-2xl border-2 border-[#1E6C02] bg-emerald-50/40 p-4 space-y-3 text-left">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-gray-700 block">Location Name</label>
+                  <input
+                    type="text"
+                    value="${r.locationName ? r.locationName.replace(/"/g, '&quot;') : ''}"
+                    placeholder="Location name"
+                    class="mob-edit-loc-name w-full bg-white border border-[#1E6C02] rounded-xl px-3 py-2.5 text-sm font-bold text-black outline-none"
+                  />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wide text-gray-700 block">Location Type</label>
+                    <select class="mob-edit-loc-type w-full bg-white border border-[#1E6C02] rounded-xl px-2.5 py-2.5 text-xs font-semibold text-black outline-none">
+                      <option value="city" ${r.locationType === 'city' ? 'selected' : ''}>City / Mun</option>
+                      <option value="province" ${r.locationType === 'province' ? 'selected' : ''}>Province</option>
+                      <option value="custom" ${r.locationType === 'custom' ? 'selected' : ''}>Custom</option>
+                    </select>
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[11px] font-bold uppercase tracking-wide text-gray-700 block">Minimum (Sacks)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="${minVal}"
+                      class="mob-edit-loc-min w-full bg-white border border-[#1E6C02] rounded-xl px-3 py-2 text-sm font-bold text-black outline-none"
+                    />
+                  </div>
+                </div>
+
+                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-800 pt-0.5">
+                  <input
+                    type="checkbox"
+                    ${isFar ? 'checked' : ''}
+                    class="mob-edit-loc-far w-4 h-4 accent-[#1E6C02] rounded"
+                  />
+                  <span>Far Delivery Area</span>
+                </label>
+
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/70">
+                  <button
+                    type="button"
+                    data-rule-id="${ruleId}"
+                    data-rule-scope="mobile"
+                    class="btn-save-edit-location-rule min-h-[42px] px-3 py-2 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-xl border border-emerald-300 transition-colors cursor-pointer text-center"
+                    title="Save changes to Firebase"
+                  >
+                    ✓ Save
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cancel-edit-location-rule min-h-[42px] px-3 py-2 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 rounded-xl border border-gray-300 transition-colors cursor-pointer text-center"
+                    title="Cancel editing"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            `);
+
             return `
               <tr class="bg-emerald-50/40 border-b border-emerald-100">
                 <td class="py-2.5 px-3">
@@ -749,6 +868,57 @@
             `;
           }
 
+          mobileCardsHtml.push(`
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs space-y-3 text-left">
+              <div class="flex items-start justify-between gap-2.5">
+                <div class="min-w-0">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Location Name</p>
+                  <p class="setting-rule-wrap font-bold text-black text-[15px] leading-snug mt-0.5">${r.locationName}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 shrink-0">
+                  ${typeLabel}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5 rounded-xl bg-gray-50 border border-gray-200/80 p-3">
+                <div>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Area Type</p>
+                  <div class="mt-1">
+                    ${isFar
+                      ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">🚩 Far Area</span>'
+                      : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Local Area</span>'
+                    }
+                  </div>
+                </div>
+                <div>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Minimum Order</p>
+                  <p class="text-[14.5px] font-extrabold text-black mt-1">${minVal} sacks</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100">
+                <button
+                  type="button"
+                  data-rule-id="${ruleId}"
+                  data-rule-idx="${idx}"
+                  class="btn-edit-location-rule min-h-[42px] px-3 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer border border-blue-200 text-center"
+                  title="Edit this location rule"
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  type="button"
+                  data-rule-idx="${idx}"
+                  data-rule-id="${ruleId}"
+                  class="btn-delete-location-rule min-h-[42px] px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer border border-red-200 text-center"
+                  title="Remove this rule"
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            </div>
+          `);
+
           return `
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="py-3 px-4 font-bold text-black text-sm">${r.locationName}</td>
@@ -792,84 +962,144 @@
           `;
         }).join('');
 
-        // Bind Edit buttons
-        tbody.querySelectorAll('.btn-edit-location-rule').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            const ruleIdx = parseInt(e.currentTarget.getAttribute('data-rule-idx'), 10);
-            const targetRule = (deliveryMinimumSettings.locationRules || []).find(r => r.id === ruleId) 
-              || (deliveryMinimumSettings.locationRules || [])[ruleIdx];
+        if (tbody) tbody.innerHTML = desktopRowsHtml;
+        if (cardsEl) cardsEl.innerHTML = mobileCardsHtml.join('');
 
-            editingLocationRuleId = ruleId;
-            renderLocationRulesRows();
-            if (targetRule) {
-              populateLocationRuleFormForEditing(targetRule, ruleId);
-            }
-          });
-        });
+        [tbody, cardsEl].filter(Boolean).forEach(container => {
+          // Bind Edit buttons
+          container.querySelectorAll('.btn-edit-location-rule').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              const ruleIdx = parseInt(e.currentTarget.getAttribute('data-rule-idx'), 10);
+              const targetRule = (deliveryMinimumSettings.locationRules || []).find(r => r.id === ruleId) 
+                || (deliveryMinimumSettings.locationRules || [])[ruleIdx];
 
-        // Bind Save Edit buttons (inline row)
-        tbody.querySelectorAll('.btn-save-edit-location-rule').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            const inpName = document.getElementById(`inp-edit-loc-name-${ruleId}`);
-            const selType = document.getElementById(`sel-edit-loc-type-${ruleId}`);
-            const chkFar = document.getElementById(`chk-edit-loc-far-${ruleId}`);
-            const inpMin = document.getElementById(`inp-edit-loc-min-${ruleId}`);
-
-            const newName = inpName ? inpName.value.trim() : '';
-            const newType = selType ? selType.value : 'city';
-            const newIsFar = chkFar ? chkFar.checked : false;
-            const newMinSacks = inpMin ? parseInt(inpMin.value, 10) : NaN;
-
-            await saveLocationRuleChanges(ruleId, newName, newType, newMinSacks, newIsFar);
-          });
-        });
-
-        // Bind Cancel Edit buttons (inline row)
-        tbody.querySelectorAll('.btn-cancel-edit-location-rule').forEach(btn => {
-          btn.addEventListener('click', () => {
-            resetLocationRuleForm();
-            renderLocationRulesRows();
-          });
-        });
-
-        // Bind delete buttons
-        tbody.querySelectorAll('.btn-delete-location-rule').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const ruleIdx = parseInt(e.currentTarget.getAttribute('data-rule-idx'), 10);
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            if (!isNaN(ruleIdx) && ruleIdx >= 0 && ruleIdx < (deliveryMinimumSettings.locationRules || []).length) {
-              const removedName = deliveryMinimumSettings.locationRules[ruleIdx].locationName;
-              deliveryMinimumSettings.locationRules.splice(ruleIdx, 1);
-              if (editingLocationRuleId === ruleId) {
-                resetLocationRuleForm();
-              }
+              editingLocationRuleId = ruleId;
               renderLocationRulesRows();
-              showToast(`Removed rule for "${removedName}". Click "Save Delivery Minimum Settings" to apply.`, 'info');
-            }
+              if (targetRule) {
+                populateLocationRuleFormForEditing(targetRule, ruleId);
+              }
+            });
+          });
+
+          // Bind Save Edit buttons (inline row or mobile card)
+          container.querySelectorAll('.btn-save-edit-location-rule').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              const scope = e.currentTarget.getAttribute('data-rule-scope');
+              const cardEl = scope === 'mobile' ? e.currentTarget.closest('[data-rule-card]') : null;
+              const inpName = cardEl ? cardEl.querySelector('.mob-edit-loc-name') : document.getElementById(`inp-edit-loc-name-${ruleId}`);
+              const selType = cardEl ? cardEl.querySelector('.mob-edit-loc-type') : document.getElementById(`sel-edit-loc-type-${ruleId}`);
+              const chkFar = cardEl ? cardEl.querySelector('.mob-edit-loc-far') : document.getElementById(`chk-edit-loc-far-${ruleId}`);
+              const inpMin = cardEl ? cardEl.querySelector('.mob-edit-loc-min') : document.getElementById(`inp-edit-loc-min-${ruleId}`);
+
+              const newName = inpName ? inpName.value.trim() : '';
+              const newType = selType ? selType.value : 'city';
+              const newIsFar = chkFar ? chkFar.checked : false;
+              const newMinSacks = inpMin ? parseInt(inpMin.value, 10) : NaN;
+
+              await saveLocationRuleChanges(ruleId, newName, newType, newMinSacks, newIsFar);
+            });
+          });
+
+          // Bind Cancel Edit buttons (inline row or mobile card)
+          container.querySelectorAll('.btn-cancel-edit-location-rule').forEach(btn => {
+            btn.addEventListener('click', () => {
+              resetLocationRuleForm();
+              renderLocationRulesRows();
+            });
+          });
+
+          // Bind delete buttons
+          container.querySelectorAll('.btn-delete-location-rule').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const ruleIdx = parseInt(e.currentTarget.getAttribute('data-rule-idx'), 10);
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              if (!isNaN(ruleIdx) && ruleIdx >= 0 && ruleIdx < (deliveryMinimumSettings.locationRules || []).length) {
+                const removedName = deliveryMinimumSettings.locationRules[ruleIdx].locationName;
+                deliveryMinimumSettings.locationRules.splice(ruleIdx, 1);
+                if (editingLocationRuleId === ruleId) {
+                  resetLocationRuleForm();
+                }
+                renderLocationRulesRows();
+                showToast(`Removed rule for "${removedName}". Click "Save Delivery Minimum Settings" to apply.`, 'info');
+              }
+            });
           });
         });
       }
 
       function renderDeliveryFeeRulesRows() {
         const tbody = document.getElementById('tbody-delivery-fee-rules');
-        if (!tbody) return;
+        const cardsEl = document.getElementById('cards-delivery-fee-rules');
+        if (!tbody && !cardsEl) return;
         const rules = deliveryFeeSettings.feeRules || [];
         if (rules.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="3" class="py-6 text-center text-gray-500 text-xs">
+          if (cardsEl) {
+            cardsEl.innerHTML = `
+              <div class="rounded-2xl border border-gray-200 bg-gray-50/70 py-6 px-4 text-center text-gray-500 text-xs">
                 No delivery fee rules configured. Customers will be alerted that delivery fees need confirmation.
-              </td>
-            </tr>
-          `;
+              </div>
+            `;
+          }
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="3" class="py-6 text-center text-gray-500 text-xs">
+                  No delivery fee rules configured. Customers will be alerted that delivery fees need confirmation.
+                </td>
+              </tr>
+            `;
+          }
           return;
         }
 
-        tbody.innerHTML = rules.map((r) => {
+        const mobileCardsHtml = [];
+        const desktopRowsHtml = rules.map((r) => {
           const isEditing = editingFeeRuleId === r.id;
           if (isEditing) {
+            mobileCardsHtml.push(`
+              <div data-fee-card="${r.id}" class="rounded-2xl border-2 border-[#1E6C02] bg-emerald-50/40 p-4 space-y-3 text-left">
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-gray-700 block">Delivery Area Name</label>
+                  <input
+                    type="text"
+                    value="${r.areaName ? r.areaName.replace(/"/g, '&quot;') : ''}"
+                    class="mob-edit-fee-area w-full bg-white border border-[#1E6C02] rounded-xl px-3 py-2.5 text-sm font-bold text-black outline-none"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[11px] font-bold uppercase tracking-wide text-gray-700 block">Delivery Fee (₱)</label>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-gray-700">₱</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="${r.fee}"
+                      class="mob-edit-fee-amount w-full bg-white border border-[#1E6C02] rounded-xl px-3 py-2 text-sm font-bold text-black outline-none"
+                    />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-200/70">
+                  <button
+                    type="button"
+                    data-rule-id="${r.id}"
+                    data-rule-scope="mobile"
+                    class="btn-save-edit-fee min-h-[42px] px-3 py-2 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-xl border border-emerald-300 transition-colors cursor-pointer text-center"
+                  >
+                    ✓ Save
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-cancel-edit-fee min-h-[42px] px-3 py-2 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 rounded-xl border border-gray-300 transition-colors cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            `);
+
             return `
               <tr class="bg-emerald-50/40">
                 <td class="py-3 px-4">
@@ -914,6 +1144,40 @@
             `;
           }
 
+          mobileCardsHtml.push(`
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xs space-y-3 text-left">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Delivery Area</p>
+                  <p class="setting-rule-wrap font-bold text-black text-[15px] leading-snug mt-0.5">📍 ${r.areaName}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Delivery Fee</p>
+                  <p class="font-extrabold text-[#1E6C02] text-[15px] mt-0.5">₱${Number(r.fee).toLocaleString()}.00</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  data-rule-id="${r.id}"
+                  class="btn-edit-delivery-fee-rule min-h-[42px] px-3 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer border border-blue-200 text-center"
+                  title="Edit area name or fee"
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  type="button"
+                  data-rule-id="${r.id}"
+                  class="btn-delete-delivery-fee-rule min-h-[42px] px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer border border-red-200 text-center"
+                  title="Remove this rule"
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            </div>
+          `);
+
           return `
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="py-3 px-4 font-bold text-black text-sm">
@@ -949,65 +1213,72 @@
           `;
         }).join('');
 
-        // Bind Edit buttons
-        tbody.querySelectorAll('.btn-edit-delivery-fee-rule').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            editingFeeRuleId = ruleId;
-            renderDeliveryFeeRulesRows();
-          });
-        });
+        if (tbody) tbody.innerHTML = desktopRowsHtml;
+        if (cardsEl) cardsEl.innerHTML = mobileCardsHtml.join('');
 
-        // Bind Save Edit buttons
-        tbody.querySelectorAll('.btn-save-edit-fee').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            const inpArea = document.getElementById(`inp-edit-fee-area-${ruleId}`);
-            const inpAmount = document.getElementById(`inp-edit-fee-amount-${ruleId}`);
-
-            const newArea = inpArea ? inpArea.value.trim() : '';
-            const newFee = inpAmount ? parseFloat(inpAmount.value) : NaN;
-
-            if (!newArea) {
-              showToast('Delivery area name cannot be empty.', 'error');
-              return;
-            }
-            if (isNaN(newFee) || newFee < 0) {
-              showToast('Delivery fee must be a valid non-negative number.', 'error');
-              return;
-            }
-
-            const rule = (deliveryFeeSettings.feeRules || []).find(r => r.id === ruleId);
-            if (rule) {
-              rule.areaName = newArea;
-              rule.fee = Math.round(newFee);
-            }
-            editingFeeRuleId = null;
-            renderDeliveryFeeRulesRows();
-            showToast(`Updated fee rule for "${newArea}". Click "Save Delivery Fee Settings" to apply.`, 'info');
-          });
-        });
-
-        // Bind Cancel Edit buttons
-        tbody.querySelectorAll('.btn-cancel-edit-fee').forEach(btn => {
-          btn.addEventListener('click', () => {
-            editingFeeRuleId = null;
-            renderDeliveryFeeRulesRows();
-          });
-        });
-
-        // Bind Delete buttons
-        tbody.querySelectorAll('.btn-delete-delivery-fee-rule').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const ruleId = e.currentTarget.getAttribute('data-rule-id');
-            const idx = (deliveryFeeSettings.feeRules || []).findIndex(r => r.id === ruleId);
-            if (idx >= 0) {
-              const removedName = deliveryFeeSettings.feeRules[idx].areaName;
-              deliveryFeeSettings.feeRules.splice(idx, 1);
-              if (editingFeeRuleId === ruleId) editingFeeRuleId = null;
+        [tbody, cardsEl].filter(Boolean).forEach(container => {
+          // Bind Edit buttons
+          container.querySelectorAll('.btn-edit-delivery-fee-rule').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              editingFeeRuleId = ruleId;
               renderDeliveryFeeRulesRows();
-              showToast(`Removed rule for "${removedName}". Click "Save Delivery Fee Settings" to apply.`, 'info');
-            }
+            });
+          });
+
+          // Bind Save Edit buttons
+          container.querySelectorAll('.btn-save-edit-fee').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              const scope = e.currentTarget.getAttribute('data-rule-scope');
+              const cardEl = scope === 'mobile' ? e.currentTarget.closest('[data-fee-card]') : null;
+              const inpArea = cardEl ? cardEl.querySelector('.mob-edit-fee-area') : document.getElementById(`inp-edit-fee-area-${ruleId}`);
+              const inpAmount = cardEl ? cardEl.querySelector('.mob-edit-fee-amount') : document.getElementById(`inp-edit-fee-amount-${ruleId}`);
+
+              const newArea = inpArea ? inpArea.value.trim() : '';
+              const newFee = inpAmount ? parseFloat(inpAmount.value) : NaN;
+
+              if (!newArea) {
+                showToast('Delivery area name cannot be empty.', 'error');
+                return;
+              }
+              if (isNaN(newFee) || newFee < 0) {
+                showToast('Delivery fee must be a valid non-negative number.', 'error');
+                return;
+              }
+
+              const rule = (deliveryFeeSettings.feeRules || []).find(r => r.id === ruleId);
+              if (rule) {
+                rule.areaName = newArea;
+                rule.fee = Math.round(newFee);
+              }
+              editingFeeRuleId = null;
+              renderDeliveryFeeRulesRows();
+              showToast(`Updated fee rule for "${newArea}". Click "Save Delivery Fee Settings" to apply.`, 'info');
+            });
+          });
+
+          // Bind Cancel Edit buttons
+          container.querySelectorAll('.btn-cancel-edit-fee').forEach(btn => {
+            btn.addEventListener('click', () => {
+              editingFeeRuleId = null;
+              renderDeliveryFeeRulesRows();
+            });
+          });
+
+          // Bind Delete buttons
+          container.querySelectorAll('.btn-delete-delivery-fee-rule').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const ruleId = e.currentTarget.getAttribute('data-rule-id');
+              const idx = (deliveryFeeSettings.feeRules || []).findIndex(r => r.id === ruleId);
+              if (idx >= 0) {
+                const removedName = deliveryFeeSettings.feeRules[idx].areaName;
+                deliveryFeeSettings.feeRules.splice(idx, 1);
+                if (editingFeeRuleId === ruleId) editingFeeRuleId = null;
+                renderDeliveryFeeRulesRows();
+                showToast(`Removed rule for "${removedName}". Click "Save Delivery Fee Settings" to apply.`, 'info');
+              }
+            });
           });
         });
       }
@@ -1097,24 +1368,43 @@
               <div class="space-y-6 text-black">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-3">
-                    <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Official Mobile Contact Point</label>
-                    <input type="text" id="inp-contact-phone" value="${contactNumber}" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <label for="inp-contact-phone" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Phone Number</label>
+                    <input type="text" id="inp-contact-phone" value="${escapeHtmlAttr(contactNumber)}" placeholder="e.g. +63 912 345 6789" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
 
                   <div class="space-y-3">
-                    <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Hours <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
-                    <input type="text" id="inp-business-hours" value="${businessHours}" placeholder="e.g. 8:00 AM - 5:00 PM (Mon - Sat)" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                    <label for="inp-contact-email" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Email Address</label>
+                    <input type="email" id="inp-contact-email" value="${escapeHtmlAttr(contactEmail)}" placeholder="e.g. info@auroralocalrice.com" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-3">
+                    <label for="inp-support-email" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Secondary Email Address <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
+                    <input type="email" id="inp-support-email" value="${escapeHtmlAttr(supportEmail)}" placeholder="e.g. support@auroralocalrice.com" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  </div>
+
+                  <div class="space-y-3">
+                    <label for="inp-facebook-link" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Facebook Page Link <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
+                    <input type="url" id="inp-facebook-link" value="${escapeHtmlAttr(facebookLink)}" placeholder="e.g. https://facebook.com/auroralocalrice" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-3">
+                    <label for="inp-business-hours" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Hours</label>
+                    <input type="text" id="inp-business-hours" value="${escapeHtmlAttr(businessHours)}" placeholder="e.g. 8:00 AM - 5:00 PM" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
+                  </div>
+
+                  <div class="space-y-3">
+                    <label for="inp-operating-days" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Operating Days</label>
+                    <input type="text" id="inp-operating-days" value="${escapeHtmlAttr(operatingDays)}" placeholder="e.g. Monday - Saturday" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
                   </div>
                 </div>
 
                 <div class="space-y-3">
-                  <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Facebook Page Link <span class="setting-helper-badge text-black font-normal">(Optional)</span></label>
-                  <input type="url" id="inp-facebook-link" value="${facebookLink}" placeholder="e.g. https://facebook.com/auroralocalrice" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black px-5 py-3.5 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200" />
-                </div>
-
-                <div class="space-y-3">
-                  <label class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Physical Store / Supplier Address</label>
-                  <textarea id="inp-store-address" rows="3" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${storeAddress}</textarea>
+                  <label for="inp-store-address" class="setting-form-label text-[15.5px] font-medium text-black tracking-normal block">Business Address</label>
+                  <textarea id="inp-store-address" rows="3" placeholder="e.g. Aurora, Zamboanga del Sur, Philippines" class="setting-input w-full bg-gray-50 border-2 border-gray-200 text-[15.5px] font-normal text-black p-4 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#1E6C02]/20 focus:border-[#1E6C02] placeholder-gray-500 transition-all duration-200">${escapeHtmlText(storeAddress)}</textarea>
                 </div>
               </div>
 
@@ -1245,8 +1535,13 @@
                   </div>
                 </div>
 
-                <!-- Rules List Table -->
-                <div class="overflow-x-auto border border-gray-200 rounded-2xl">
+                <!-- Mobile Rules Cards -->
+                <div id="cards-location-rules" class="md:hidden space-y-3">
+                  <!-- Dynamically rendered -->
+                </div>
+
+                <!-- Rules List Table (Desktop) -->
+                <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-2xl">
                   <table class="w-full text-left text-sm border-collapse min-w-[560px]">
                     <thead>
                       <tr class="bg-gray-50/90 border-b border-gray-200 text-xs font-bold uppercase text-gray-700">
@@ -1376,8 +1671,13 @@
                   </div>
                 </div>
 
-                <!-- Rules List Table -->
-                <div class="overflow-x-auto border border-gray-200 rounded-2xl">
+                <!-- Mobile Fee Rules Cards -->
+                <div id="cards-delivery-fee-rules" class="md:hidden space-y-3">
+                  <!-- Dynamically rendered -->
+                </div>
+
+                <!-- Rules List Table (Desktop) -->
+                <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-2xl">
                   <table class="w-full text-left text-sm border-collapse min-w-[500px]">
                     <thead>
                       <tr class="bg-gray-50/90 border-b border-gray-200 text-xs font-bold uppercase text-gray-700">
@@ -1727,12 +2027,25 @@
         if (btnSaveContact) {
           btnSaveContact.addEventListener('click', () => {
             const sPhone = document.getElementById('inp-contact-phone').value.trim();
+            const sEmail = document.getElementById('inp-contact-email').value.trim();
+            const sSupportEmail = document.getElementById('inp-support-email').value.trim();
             const sHours = document.getElementById('inp-business-hours').value.trim();
+            const sDays = document.getElementById('inp-operating-days').value.trim();
             const sFb = document.getElementById('inp-facebook-link').value.trim();
             const sAddr = document.getElementById('inp-store-address').value.trim();
 
-            if (!sPhone || !sAddr) {
-              showToast('Official Contact Point and Physical Store Address are required!', 'error');
+            if (!sPhone || !sEmail || !sAddr) {
+              showToast('Phone Number, Email Address, and Business Address are required!', 'error');
+              return;
+            }
+
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(sEmail)) {
+              showToast('Please enter a valid primary Email Address.', 'error');
+              return;
+            }
+            if (sSupportEmail && !emailPattern.test(sSupportEmail)) {
+              showToast('Please enter a valid Secondary Email Address.', 'error');
               return;
             }
 
@@ -1741,21 +2054,59 @@
               message: 'Are you sure you want to save these changes?<br><br>These updates will immediately be applied to the storefront.',
               cancelText: 'No, Cancel',
               confirmText: 'Yes, Save Changes',
-              onConfirm: () => {
-                localStorage.setItem('settings-contact-number', sPhone);
-                localStorage.setItem('settings-business-hours', sHours);
-                localStorage.setItem('settings-facebook-link', sFb);
-                localStorage.setItem('settings-store-address', sAddr);
+              onConfirm: async () => {
+                const btnConfirm = document.getElementById('btn-confirm-modal');
+                if (btnConfirm) {
+                  btnConfirm.disabled = true;
+                  btnConfirm.textContent = 'Saving...';
+                }
 
-                contactNumber = sPhone;
-                businessHours = sHours;
-                facebookLink = sFb;
-                storeAddress = sAddr;
+                try {
+                  const currentSettings = getStoreSettings();
+                  currentSettings.contactNumber = sPhone;
+                  currentSettings.contactEmail = sEmail;
+                  currentSettings.supportEmail = sSupportEmail;
+                  currentSettings.businessHours = sHours;
+                  currentSettings.operatingDays = sDays;
+                  currentSettings.facebookLink = sFb;
+                  currentSettings.storeAddress = sAddr;
 
-                addActivityLog('System', 'Updated storefront contact details and address');
-                showToast('Contact information updated successfully.', 'success');
+                  await saveFirestoreDoc('storeSettings', 'main', currentSettings);
 
-                renderSettingsPanel();
+                  localStorage.setItem('settings-contact-number', sPhone);
+                  localStorage.setItem('settings-contact-email', sEmail);
+                  localStorage.setItem('settings-support-email', sSupportEmail);
+                  localStorage.setItem('settings-business-hours', sHours);
+                  localStorage.setItem('settings-operating-days', sDays);
+                  localStorage.setItem('settings-facebook-link', sFb);
+                  localStorage.setItem('settings-store-address', sAddr);
+                  localStorage.setItem('aurora-store-settings', JSON.stringify([currentSettings]));
+
+                  contactNumber = sPhone;
+                  contactEmail = sEmail;
+                  supportEmail = sSupportEmail;
+                  businessHours = sHours;
+                  operatingDays = sDays;
+                  facebookLink = sFb;
+                  storeAddress = sAddr;
+
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'aurora-store-settings' } }));
+                  }
+
+                  addActivityLog('System', 'Updated storefront contact details and address');
+                  showToast('Contact information saved and synced successfully.', 'success');
+
+                  renderSettingsPanel();
+                } catch (err) {
+                  console.error('[SETTINGS] Error saving contact information:', err);
+                  showToast('Failed to save contact information: ' + (err.message || err), 'error');
+                } finally {
+                  if (btnConfirm) {
+                    btnConfirm.disabled = false;
+                    btnConfirm.textContent = 'Yes, Save Changes';
+                  }
+                }
               }
             });
           });
@@ -2119,8 +2470,41 @@
         }
       }
 
+      let hasLocalSettingsActivity = false;
+      targetSpace.addEventListener('input', () => { hasLocalSettingsActivity = true; });
+      targetSpace.addEventListener('change', () => { hasLocalSettingsActivity = true; });
+
       // Initial loading render Settings Panel
       renderSettingsPanel();
+
+      // Re-hydrate settings fields cleanly if remote Firestore sync completes after mount
+      // without clobbering active edits or recently saved local values.
+      window.addEventListener('aurora-sync-event', (e) => {
+        if (!e?.detail?.remote || e.detail.key !== 'aurora-store-settings') return;
+        if (hasLocalSettingsActivity) return;
+        const activeEl = document.activeElement;
+        if (activeEl && targetSpace.contains(activeEl) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName)) {
+          return;
+        }
+        const synced = getStoreSettings();
+        storeName = synced.storeName;
+        description = synced.description;
+        contactNumber = synced.contactNumber;
+        contactEmail = synced.contactEmail;
+        supportEmail = synced.supportEmail;
+        storeAddress = synced.storeAddress;
+        facebookLink = synced.facebookLink;
+        businessHours = synced.businessHours;
+        operatingDays = synced.operatingDays;
+        logoBase64 = synced.logo;
+        bannerBase64 = synced.banner;
+        gcashName = synced.gcashName;
+        gcashNumber = synced.gcashNumber;
+        gcashQrBase64 = synced.gcashQr;
+        deliveryMinimumSettings = JSON.parse(JSON.stringify(synced.deliveryMinimumSettings || DEFAULT_DELIVERY_MINIMUM_SETTINGS));
+        deliveryFeeSettings = JSON.parse(JSON.stringify(synced.deliveryFeeSettings || DEFAULT_DELIVERY_FEE_SETTINGS));
+        renderSettingsPanel();
+      });
     });
   </script>
 </body>

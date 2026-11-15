@@ -425,6 +425,31 @@
       color: #E5E7EB !important;
     }
   </style>
+  <style id="riceflow-staff-responsive-css">
+    #admin-main-content, #admin-main-content * { min-width: 0; }
+    #admin-main-content .staff-row-email,
+    #history-cards-list .history-card-desc,
+    #history-staff-sub {
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+    }
+    @media (max-width: 1023px) {
+      #admin-main-content { padding: 14px 12px !important; }
+      #admin-layout-container > #admin-right-workspace > header { min-height: 68px; height: auto; padding: 12px 16px; }
+      #admin-layout-container > #admin-right-workspace > header h2 { font-size: 21px !important; line-height: 1.25 !important; }
+    }
+    @media (max-width: 767px) {
+      #staff-history-modal {
+        padding: 12px !important;
+      }
+      #staff-history-modal-panel {
+        width: calc(100vw - 24px) !important;
+        max-width: 100% !important;
+        max-height: calc(100dvh - 24px) !important;
+        border-radius: 22px !important;
+      }
+    }
+  </style>
 </head>
 <body class="bg-[#F5F5F5] min-h-screen">
   <div id="auth-guard-loader" class="fixed inset-0 bg-[#F5F5F5] z-[99999] flex flex-col items-center justify-center font-sans">
@@ -659,27 +684,33 @@
   </div>
 
   <!-- STAFF ACTIVITY HISTORY MODAL -->
-  <div id="staff-history-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] flex items-center justify-center p-4 hidden transition-opacity duration-300">
-    <div class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden border border-gray-150 relative transform scale-95 opacity-0 transition-all duration-300" id="staff-history-modal-panel">
+  <div id="staff-history-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] flex items-center justify-center p-3 sm:p-4 hidden transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[calc(100dvh-24px)] flex flex-col shadow-2xl overflow-hidden border border-gray-150 relative transform scale-95 opacity-0 transition-all duration-300" id="staff-history-modal-panel">
       <!-- Fixed Header -->
-      <div class="flex justify-between items-start p-6 pb-4 border-b border-gray-100 bg-white">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#1E6C02] flex items-center justify-center text-xl font-semibold border border-emerald-100">
+      <div class="flex justify-between items-start gap-3 p-4 sm:p-6 pb-3 sm:pb-4 border-b border-gray-100 bg-white shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#1E6C02] flex items-center justify-center text-xl font-semibold border border-emerald-100 shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
           </div>
-          <div>
-            <h3 id="history-staff-name" class="text-lg font-semibold text-black tracking-tight">Staff Name</h3>
+          <div class="min-w-0">
+            <h3 id="history-staff-name" class="text-lg font-semibold text-black tracking-tight break-words">Staff Name</h3>
             <p id="history-staff-sub" class="text-[13.5px] text-black font-normal mt-0.5">Staff Activity History</p>
           </div>
         </div>
-        <button id="close-history-modal-x" class="text-black hover:text-gray-900 transition-colors cursor-pointer text-xl font-semibold p-1 select-none">
+        <button id="close-history-modal-x" class="text-black hover:text-gray-900 transition-colors cursor-pointer text-xl font-semibold p-1.5 select-none shrink-0">
           ✕
         </button>
       </div>
 
       <!-- Scrollable Body -->
-      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <div class="overflow-x-auto w-full rounded-2xl border border-gray-200">
+      <div class="p-4 sm:p-6 space-y-4 flex-1 min-h-0 overflow-y-auto">
+        <!-- Mobile Activity Cards -->
+        <div id="history-cards-list" class="md:hidden space-y-3">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <!-- Desktop Activity Table -->
+        <div class="hidden md:block overflow-x-auto w-full rounded-2xl border border-gray-200">
           <table class="w-full text-left text-[14px] font-normal text-black border-collapse">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200 text-black font-semibold uppercase text-xs tracking-wider">
@@ -699,8 +730,8 @@
       </div>
 
       <!-- Footer Button -->
-      <div class="flex items-center justify-end p-4 border-t border-gray-100 bg-gray-50/50">
-        <button type="button" id="btn-close-history-modal" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-black font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors select-none">
+      <div class="flex items-center justify-end p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+        <button type="button" id="btn-close-history-modal" class="w-full sm:w-auto min-h-[44px] px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-black font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors select-none">
           Close
         </button>
       </div>
@@ -858,31 +889,31 @@
 
       function renderStaffPage() {
         targetSpace.innerHTML = `
-          <div class="space-y-8 w-full animate-in fade-in duration-300">
+          <div class="space-y-6 sm:space-y-8 w-full animate-in fade-in duration-300">
             
             <!-- Page Header Container matching layout from reference image -->
-            <div class="bg-white rounded-3xl p-8 border border-gray-150 shadow-sm flex flex-col md:flex-row gap-6 items-center justify-between">
+            <div class="bg-white rounded-3xl p-4 sm:p-6 lg:p-8 border border-gray-150 shadow-sm flex flex-col md:flex-row gap-4 sm:gap-6 items-stretch md:items-center justify-between">
               <div class="space-y-1 text-center md:text-left">
-                <p class="staff-header-desc text-base text-black font-normal">Manage your team members and their roles.</p>
+                <p class="staff-header-desc text-[15px] sm:text-base text-black font-normal">Manage your team members and their roles.</p>
               </div>
 
-              <div class="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto shrink-0">
-                <button id="btn-toggle-archived-staff" class="flex items-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-200 text-black hover:bg-gray-50/80 font-semibold text-[14.5px] uppercase tracking-wider rounded-xl cursor-pointer shadow-xs transition-all active:scale-95 select-none">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-black"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+              <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-center md:justify-end gap-2.5 sm:gap-3.5 w-full md:w-auto shrink-0">
+                <button id="btn-toggle-archived-staff" class="flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 bg-white border-2 border-gray-200 text-black hover:bg-gray-50/80 font-semibold text-[14px] sm:text-[14.5px] uppercase tracking-wider rounded-xl cursor-pointer shadow-xs transition-all active:scale-95 select-none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-black shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
                   <span>${showArchived ? 'View Active' : 'View Archived'}</span>
                 </button>
-                <button id="btn-open-create-staff" class="flex items-center gap-2.5 px-6 py-3.5 bg-[#1E6C02] hover:bg-[#145001] active:scale-95 text-white font-semibold text-[14.5px] uppercase tracking-wider rounded-xl cursor-pointer shadow-md transition-all hover:scale-[1.01] select-none">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button id="btn-open-create-staff" class="flex items-center justify-center gap-2.5 min-h-[44px] px-5 py-3 bg-[#1E6C02] hover:bg-[#145001] active:scale-95 text-white font-semibold text-[14px] sm:text-[14.5px] uppercase tracking-wider rounded-xl cursor-pointer shadow-md transition-all hover:scale-[1.01] select-none">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   <span>Add Staff Member</span>
                 </button>
               </div>
             </div>
 
             <!-- Active / Archived Staff Database List container -->
-            <div class="bg-white rounded-3xl border border-gray-150 p-8 shadow-sm space-y-6">
+            <div class="bg-white rounded-3xl border border-gray-150 p-4 sm:p-6 lg:p-8 shadow-sm space-y-5 sm:space-y-6">
               
               <!-- Action header bar with Title and instant search bar -->
-              <div class="flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between">
+              <div class="flex flex-col lg:flex-row gap-4 sm:gap-5 items-stretch lg:items-center justify-between">
                 <h3 class="text-lg font-semibold text-black tracking-tight" id="table-card-title">
                   ${showArchived ? 'Archived Staff' : 'Active Staff'}
                 </h3>
@@ -896,19 +927,24 @@
                     type="text" 
                     id="staff-search-input" 
                     placeholder="Search by name, email, contact, role..." 
-                    class="w-full pl-12 pr-10 py-3.5 bg-gray-50 border-2 border-gray-150 rounded-2xl font-normal text-[15px] outline-none text-black focus:bg-white focus:border-[#1E6C02] transition-colors shadow-inner" 
+                    class="w-full min-h-[46px] pl-12 pr-10 py-3 bg-gray-50 border-2 border-gray-150 rounded-2xl font-normal text-[15px] outline-none text-black focus:bg-white focus:border-[#1E6C02] transition-colors shadow-inner" 
                   />
                   <button 
                     id="btn-clear-search" 
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-black hover:text-gray-900 transition-colors hidden cursor-pointer p-0.5 rounded-full hover:bg-gray-100"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-black hover:text-gray-900 transition-colors hidden cursor-pointer p-1 rounded-full hover:bg-gray-100"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                 </div>
               </div>
 
-              <!-- Main Table responsive viewport -->
-              <div class="overflow-x-auto w-full rounded-2xl border border-gray-100">
+              <!-- Mobile & Tablet Staff Cards -->
+              <div id="staff-cards-body" class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <!-- Dynamic staff cards loaded here -->
+              </div>
+
+              <!-- Main Desktop Table responsive viewport -->
+              <div class="hidden lg:block overflow-x-auto w-full rounded-2xl border border-gray-100">
                 <table class="w-full text-left text-[14px] font-semibold text-black min-w-[750px] border-collapse">
                   <thead>
                     <tr class="border-b border-gray-150 text-black font-semibold text-[14px] select-none">
@@ -942,7 +978,8 @@
       function renderTableRows(searchQuery = '') {
         const staffList = getStaff();
         const tbody = document.getElementById('staff-table-body');
-        if (!tbody) return;
+        const cardsBody = document.getElementById('staff-cards-body');
+        if (!tbody && !cardsBody) return;
 
         const q = String(searchQuery || '').toLowerCase().trim();
 
@@ -966,20 +1003,33 @@
         }
 
         if (filtered.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="${showArchived ? '5' : '5'}" class="py-16 text-center text-black font-medium text-[15px]">
+          if (cardsBody) {
+            cardsBody.innerHTML = `
+              <div class="md:col-span-2 py-12 text-center text-black font-medium text-[15px]">
                 <div class="flex flex-col items-center justify-center gap-3">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-gray-400"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
                   <span>No matches found inside database.</span>
                 </div>
-              </td>
-            </tr>
-          `;
+              </div>
+            `;
+          }
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="${showArchived ? '5' : '5'}" class="py-16 text-center text-black font-medium text-[15px]">
+                  <div class="flex flex-col items-center justify-center gap-3">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8 text-gray-400"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    <span>No matches found inside database.</span>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }
           return;
         }
 
-        tbody.innerHTML = filtered.map((member) => {
+        const mobileCardsHtmlList = [];
+        const desktopRowsHtml = filtered.map((member) => {
           // Circular profile pic generator
           const avatarHTML = member.profilePicture ? `
             <img class="w-11 h-11 rounded-full object-cover border-2 border-green-50 shadow-xs animate-in fade-in-50" src="${member.profilePicture}" alt="${member.name}" />
@@ -1017,6 +1067,39 @@
           if (showArchived) {
             // Archived staff layout
             const archivedDateString = member.archivedDate || 'N/A';
+
+            mobileCardsHtmlList.push(`
+              <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-4 shadow-2xs flex flex-col justify-between gap-3.5 text-left">
+                <div class="space-y-3">
+                  <div class="flex items-start justify-between gap-2.5">
+                    <div class="flex items-center gap-3 min-w-0">
+                      ${avatarHTML}
+                      <div class="min-w-0">
+                        <p class="staff-row-name font-semibold text-black dark:text-white text-[16px] leading-snug break-words">${member.name}</p>
+                        <div class="mt-1">${roleBadgeHTML}</div>
+                      </div>
+                    </div>
+                    ${statusBadgeHTML}
+                  </div>
+
+                  <div class="rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2.5 space-y-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Archived Date</p>
+                    <p class="text-sm font-medium text-black dark:text-gray-200">${archivedDateString}</p>
+                  </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100 dark:border-slate-800">
+                  <button
+                    data-id="${member.id}"
+                    class="btn-staff-restore w-full min-h-[44px] px-4 py-2.5 bg-white hover:bg-green-50 border-2 border-[#1E6C02] text-[#1E6C02] font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer shadow-xs transition-all active:scale-95 select-none inline-flex items-center justify-center gap-1.5"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>Restore</span>
+                  </button>
+                </div>
+              </div>
+            `);
+
             return `
               <tr class="hover:bg-gray-50/50 transition-all duration-155 animate-in fade-in-50 border-b border-gray-100">
                 <td class="py-4.5 px-6">
@@ -1047,6 +1130,63 @@
             `;
           } else {
             // Active staff layout
+            mobileCardsHtmlList.push(`
+              <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-4 shadow-2xs flex flex-col justify-between gap-3.5 text-left">
+                <div class="space-y-3">
+                  <div class="flex items-start justify-between gap-2.5">
+                    <div class="flex items-center gap-3 min-w-0">
+                      ${avatarHTML}
+                      <div class="min-w-0">
+                        <p class="staff-row-name font-semibold text-black dark:text-white text-[16px] leading-snug break-words">${member.name}</p>
+                        <div class="mt-1">${roleBadgeHTML}</div>
+                      </div>
+                    </div>
+                    ${statusBadgeHTML}
+                  </div>
+
+                  <div class="rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2.5 space-y-1.5">
+                    <div>
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Email Address</p>
+                      <p class="staff-row-email text-[14.5px] font-normal text-black dark:text-gray-200 leading-snug mt-0.5">${member.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Contact Number</p>
+                      <p class="staff-row-phone text-[14px] font-normal text-black dark:text-gray-200 mt-0.5">${member.contactNumber || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-2.5 border-t border-gray-100 dark:border-slate-800 grid grid-cols-3 gap-2">
+                  <button
+                    data-id="${member.id}"
+                    title="View Activity Log"
+                    class="btn-staff-history w-full min-w-0 min-h-[48px] text-[#1E6C02] hover:text-emerald-800 cursor-pointer transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-1 px-1.5 sm:px-2.5 py-2 bg-emerald-50 hover:bg-emerald-100 rounded-xl font-semibold text-[11px] sm:text-xs leading-tight text-center border border-emerald-200 shadow-2xs select-none"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <span>Activity Log</span>
+                  </button>
+
+                  <button
+                    data-id="${member.id}"
+                    title="Edit Staff Member"
+                    class="btn-staff-edit w-full min-w-0 min-h-[48px] px-1.5 sm:px-2.5 py-2 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl cursor-pointer transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-1 text-[11px] sm:text-xs leading-tight font-semibold text-center"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    data-id="${member.id}"
+                    title="Archive Staff Account"
+                    class="btn-staff-archive w-full min-w-0 min-h-[48px] px-1.5 sm:px-2.5 py-2 text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl cursor-pointer transition-all active:scale-95 flex flex-col sm:flex-row items-center justify-center gap-1 text-[11px] sm:text-xs leading-tight font-semibold text-center"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                    <span>Archive</span>
+                  </button>
+                </div>
+              </div>
+            `);
+
             return `
               <tr class="hover:bg-gray-50/50 transition-all duration-155 animate-in fade-in-50 border-b border-gray-100">
                 <td class="py-4.5 px-6">
@@ -1100,6 +1240,9 @@
             `;
           }
         }).join('');
+
+        if (tbody) tbody.innerHTML = desktopRowsHtml;
+        if (cardsBody) cardsBody.innerHTML = mobileCardsHtmlList.join('');
 
         // Bind Action Clicks inside rows
         bindRowLevelEvents();
@@ -1194,7 +1337,15 @@
             });
 
             const tbody = document.getElementById('history-table-tbody');
+            const cardsList = document.getElementById('history-cards-list');
             if (memberLogs.length === 0) {
+              if (cardsList) {
+                cardsList.innerHTML = `
+                  <div class="rounded-2xl border border-gray-200 bg-gray-50/70 py-10 px-4 text-center text-black font-medium text-[14.5px]">
+                    No activity logs found for this staff member.
+                  </div>
+                `;
+              }
               tbody.innerHTML = `
                 <tr>
                   <td colspan="6" class="py-12 text-center text-black font-medium text-[14.5px]">
@@ -1203,7 +1354,7 @@
                 </tr>
               `;
             } else {
-              tbody.innerHTML = memberLogs.map(log => {
+              const formattedLogs = memberLogs.map(log => {
                 let dateStr = 'N/A';
                 let timeStr = '';
                 if (log.timestamp) {
@@ -1257,24 +1408,69 @@
                   }
                 }
 
-                return `
-                  <tr class="hover:bg-gray-50/80 transition-colors border-b border-gray-100">
-                    <td class="py-3.5 px-4 text-[14px] font-normal text-black whitespace-nowrap">
-                      <div>${dateStr}</div>
-                      <div class="text-[13px] text-black font-normal">${timeStr}</div>
-                    </td>
-                    <td class="py-3.5 px-4 text-[14.5px] font-medium text-black">${action}</td>
-                    <td class="py-3.5 px-4 text-[13.5px]">
-                      <span class="inline-block px-2.5 py-1 rounded-lg bg-gray-100 text-black border border-gray-200 font-medium">
-                        ${category}
+                return { dateStr, timeStr, action, category, target, affectedOrder, customer };
+              });
+
+              if (cardsList) {
+                cardsList.innerHTML = formattedLogs.map(item => `
+                  <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-4 shadow-2xs space-y-2.5 text-left">
+                    <div class="flex items-start justify-between gap-2.5 border-b border-gray-100 dark:border-slate-800 pb-2">
+                      <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Date &amp; Time</p>
+                        <p class="text-[13.5px] font-medium text-black dark:text-white leading-snug">${item.dateStr}${item.timeStr ? ` • ${item.timeStr}` : ''}</p>
+                      </div>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-black dark:text-gray-200 border border-gray-200 dark:border-slate-700 text-xs font-semibold shrink-0">
+                        ${item.category}
                       </span>
-                    </td>
-                    <td class="py-3.5 px-4 text-[14px] font-normal text-black">${target}</td>
-                    <td class="py-3.5 px-4 text-[14px] font-medium text-[#1E6C02] whitespace-nowrap">${affectedOrder}</td>
-                    <td class="py-3.5 px-4 text-[14px] font-normal text-black whitespace-nowrap">${customer}</td>
-                  </tr>
-                `;
-              }).join('');
+                    </div>
+
+                    <div>
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Action</p>
+                      <p class="text-[14.5px] font-semibold text-black dark:text-white leading-snug mt-0.5">${item.action}</p>
+                    </div>
+
+                    <div class="rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2">
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Description / Details</p>
+                      <p class="history-card-desc text-[13.5px] font-normal text-black dark:text-gray-200 leading-relaxed mt-0.5">${item.target}</p>
+                    </div>
+
+                    ${(item.affectedOrder !== '-' || item.customer !== '-') ? `
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                        ${item.affectedOrder !== '-' ? `
+                          <div class="rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 px-3 py-2">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Affected Order</p>
+                            <p class="text-[13.5px] font-semibold text-[#1E6C02] dark:text-emerald-300 mt-0.5 break-words">${item.affectedOrder}</p>
+                          </div>
+                        ` : ''}
+                        ${item.customer !== '-' ? `
+                          <div class="rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer</p>
+                            <p class="text-[13.5px] font-medium text-black dark:text-gray-200 mt-0.5 break-words">${item.customer}</p>
+                          </div>
+                        ` : ''}
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('');
+              }
+
+              tbody.innerHTML = formattedLogs.map(item => `
+                <tr class="hover:bg-gray-50/80 transition-colors border-b border-gray-100">
+                  <td class="py-3.5 px-4 text-[14px] font-normal text-black whitespace-nowrap">
+                    <div>${item.dateStr}</div>
+                    <div class="text-[13px] text-black font-normal">${item.timeStr}</div>
+                  </td>
+                  <td class="py-3.5 px-4 text-[14.5px] font-medium text-black">${item.action}</td>
+                  <td class="py-3.5 px-4 text-[13.5px]">
+                    <span class="inline-block px-2.5 py-1 rounded-lg bg-gray-100 text-black border border-gray-200 font-medium">
+                      ${item.category}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-[14px] font-normal text-black">${item.target}</td>
+                  <td class="py-3.5 px-4 text-[14px] font-medium text-[#1E6C02] whitespace-nowrap">${item.affectedOrder}</td>
+                  <td class="py-3.5 px-4 text-[14px] font-normal text-black whitespace-nowrap">${item.customer}</td>
+                </tr>
+              `).join('');
             }
 
             document.getElementById('close-history-modal-x').onclick = () => closeModal(modal, modalPanel);

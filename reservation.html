@@ -417,7 +417,7 @@
                       class="w-full h-full object-contain"
                     />
                   </div>
-                  <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100">Account Name: <span class="text-gray-950 dark:text-white font-extrabold" id="gcash-account-name">Aurora Local Rice</span></h5>
+                  <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100">Account Name: <span class="text-gray-950 dark:text-white font-extrabold" id="gcash-account-name">Mahayag Local Rice</span></h5>
                   <p class="text-xs text-gray-900 dark:text-gray-100 font-bold mt-1">GCash Number: <span class="text-[#1E6C02] dark:text-emerald-400 font-black" id="gcash-number-lbl">0912 345 6789</span></p>
                   
                   <div class="mt-4 bg-[#E2F9E5] dark:bg-emerald-950/60 border border-[#C6EFCE] dark:border-emerald-800/60 py-2 px-4 rounded-xl inline-block">
@@ -699,6 +699,8 @@
       sendFirebasePhoneVerification, 
       verifyAndLinkPhoneCredential,
       initFirestoreSync,
+      fetchCustomerProfileFromFirestore,
+      auth,
       storage,
       storageRef,
       uploadBytes,
@@ -749,16 +751,6 @@
       if (inpFullName) inpFullName.value = user.fullName || 'Demo User';
       if (inpPhone) inpPhone.value = user.phone || '+63 912 345 6789';
 
-      // Auto-bind form draft preservation (preserves unfinished work across connection drops / accidental tab closures)
-      autoBindDraftPreservation(
-        'order-form',
-        `reservation_draft_${productId}`,
-        () => null,
-        () => {
-          if (typeof refreshCalculations === 'function') refreshCalculations();
-        }
-      );
-
       const currentUserId = String(user?.id || user?.uid || user?.firebaseUid || '').trim();
       const currentUserEmail = String(user?.email || '').trim().toLowerCase();
 
@@ -784,46 +776,114 @@
       let activeReservationAddress = null; // { address, coordinates, addressDetails, isConfirmed }
       let currentSelectedCoordinates = null;
       let isCoordinatesConfirmed = false;
+      let isAddressDirtyByUser = false;
 
-      // 1. Check active address saved during current session in sessionStorage first
-      let sessionAddr = null;
-      try {
-        const raw = sessionStorage.getItem('riceflow-active-checkout-address');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (isOwnedByCurrentUser(parsed)) {
-            sessionAddr = parsed;
+      const toTimestampMs = (v) => (typeof v === 'number' && isFinite(v)) ? v : (v ? (Date.parse(v) || 0) : 0);
+
+      function loadReservationAddressFromState() {
+        // 1. Check active address saved during current session in sessionStorage first
+        let sessionAddr = null;
+        try {
+          const raw = sessionStorage.getItem('riceflow-active-checkout-address');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isOwnedByCurrentUser(parsed)) {
+              sessionAddr = parsed;
+            } else {
+              sessionStorage.removeItem('riceflow-active-checkout-address');
+            }
+          }
+        } catch (_) {}
+
+        // Prefer saved user profile address if it was updated more recently than the session cache and differs
+        const userUpdatedAt = toTimestampMs(user?.updatedAt);
+        const sessionSavedAt = toTimestampMs(sessionAddr?.savedAt);
+        if (sessionAddr && user && user.address && typeof user.address === 'string' && user.address.trim() && userUpdatedAt > sessionSavedAt && String(user.address).trim() !== String(sessionAddr.address || '').trim()) {
+          sessionAddr = null;
+        }
+
+        // 2. Fallback to customer's saved profile address
+        if (!sessionAddr && user && user.address && typeof user.address === 'string' && user.address.trim()) {
+          const hasCoords = Boolean(user.coordinates && typeof user.coordinates.lat === 'number' && typeof user.coordinates.lng === 'number');
+          sessionAddr = {
+            userId: currentUserId,
+            userEmail: currentUserEmail,
+            address: user.address.trim(),
+            coordinates: hasCoords ? user.coordinates : null,
+            addressDetails: user.addressDetails || null,
+            isConfirmed: hasCoords
+          };
+        }
+
+        if (sessionAddr && sessionAddr.address) {
+          activeReservationAddress = sessionAddr;
+          if (sessionAddr.coordinates && typeof sessionAddr.coordinates.lat === 'number' && typeof sessionAddr.coordinates.lng === 'number') {
+            currentSelectedCoordinates = {
+              lat: Math.round(sessionAddr.coordinates.lat * 1e6) / 1e6,
+              lng: Math.round(sessionAddr.coordinates.lng * 1e6) / 1e6
+            };
+            isCoordinatesConfirmed = Boolean(sessionAddr.isConfirmed);
           } else {
-            sessionStorage.removeItem('riceflow-active-checkout-address');
+            currentSelectedCoordinates = null;
+            isCoordinatesConfirmed = false;
+          }
+          if (inpAddress && !isAddressDirtyByUser) inpAddress.value = sessionAddr.address;
+        } else {
+          activeReservationAddress = null;
+          currentSelectedCoordinates = null;
+          isCoordinatesConfirmed = false;
+          if (inpAddress && !isAddressDirtyByUser) {
+            inpAddress.value = (user && user.address) ? String(user.address).trim() : '';
           }
         }
-      } catch (_) {}
-
-      // 2. Fallback to customer's saved profile address
-      if (!sessionAddr && user && user.address && typeof user.address === 'string' && user.address.trim()) {
-        sessionAddr = {
-          userId: currentUserId,
-          userEmail: currentUserEmail,
-          address: user.address.trim(),
-          coordinates: (user.coordinates && typeof user.coordinates.lat === 'number') ? user.coordinates : { lat: 7.9628, lng: 123.5826 },
-          addressDetails: user.addressDetails || null,
-          isConfirmed: true
-        };
       }
 
-      if (sessionAddr && sessionAddr.address) {
-        activeReservationAddress = sessionAddr;
-        if (sessionAddr.coordinates && typeof sessionAddr.coordinates.lat === 'number' && typeof sessionAddr.coordinates.lng === 'number') {
-          currentSelectedCoordinates = {
-            lat: Math.round(sessionAddr.coordinates.lat * 1e6) / 1e6,
-            lng: Math.round(sessionAddr.coordinates.lng * 1e6) / 1e6
-          };
-          isCoordinatesConfirmed = Boolean(sessionAddr.isConfirmed);
+      async function hydrateReservationAddressFromFirestoreIfMissing() {
+        try {
+          const currentLocal = getCurrentUser() || user;
+          if (!currentLocal) return;
+          const missingAddress = !(currentLocal.address && String(currentLocal.address).trim());
+          const missingDetails = !currentLocal.addressDetails;
+          const missingCoords = !(currentLocal.coordinates && typeof currentLocal.coordinates.lat === 'number');
+          if (!missingAddress && !missingDetails && !missingCoords) return;
+
+          const lookupEmail = currentLocal.email || auth?.currentUser?.email || '';
+          const lookupUid = currentLocal.firebaseUid || currentLocal.uid || auth?.currentUser?.uid || '';
+          const lookupId = currentLocal.id || '';
+          if (!lookupEmail && !lookupUid && !lookupId) return;
+
+          const remoteProfile = await fetchCustomerProfileFromFirestore(lookupEmail, lookupUid, lookupId);
+          if (remoteProfile && remoteProfile.address && String(remoteProfile.address).trim()) {
+            const latestLocal = getCurrentUser() || currentLocal;
+            const localHasNewerAddr = Boolean(
+              latestLocal.address &&
+              String(latestLocal.address).trim() &&
+              toTimestampMs(latestLocal.updatedAt) > toTimestampMs(remoteProfile.updatedAt)
+            );
+            if (!localHasNewerAddr) {
+              const mergedUser = {
+                ...latestLocal,
+                address: remoteProfile.address,
+                coordinates: remoteProfile.coordinates || latestLocal.coordinates || null,
+                addressDetails: remoteProfile.addressDetails || latestLocal.addressDetails || null,
+                updatedAt: remoteProfile.updatedAt || latestLocal.updatedAt || new Date().toISOString()
+              };
+              user = mergedUser;
+              try {
+                localStorage.setItem('aurora-user', JSON.stringify(mergedUser));
+              } catch (_) {}
+              if (!isAddressDirtyByUser) {
+                loadReservationAddressFromState();
+                if (typeof syncReservationAddressUI === 'function') syncReservationAddressUI();
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[RESERVATION] Non-fatal address hydration check error:', err);
         }
-        if (inpAddress) inpAddress.value = sessionAddr.address;
-      } else if (inpAddress) {
-        inpAddress.value = user.address || '';
       }
+
+      loadReservationAddressFromState();
 
       // Stock check: determine if target product is currently out of stock or full-order reservation
       const isFullReservation = urlParams.get('fullReservation') === 'true' || urlParams.get('type') === 'full_reservation';
@@ -1233,16 +1293,32 @@
         });
       }
       if (addressInput) {
-        addressInput.addEventListener('input', () => {
+        addressInput.addEventListener('input', (e) => {
+          if (e && e.isTrusted) {
+            isAddressDirtyByUser = true;
+          }
           refreshCalculations();
         });
       }
+      await hydrateReservationAddressFromFirestoreIfMissing();
       syncReservationAddressUI();
 
       window.addEventListener('aurora-sync-event', (e) => {
         if (e.detail && (e.detail.key === 'delivery-minimum-settings' || e.detail.key === 'aurora-store-settings' || e.detail.key === 'settings-delivery-fee')) {
           updateDeliveryMinimumStatus();
           refreshCalculations();
+        }
+        if (e.detail && e.detail.key === 'aurora-user') {
+          const freshUser = getCurrentUser();
+          if (freshUser) {
+            user = freshUser;
+            if (inpFullName && !inpFullName.value.trim() && user.fullName) inpFullName.value = user.fullName;
+            if (inpPhone && !inpPhone.value.trim() && user.phone) inpPhone.value = user.phone;
+            if (!isAddressDirtyByUser) {
+              loadReservationAddressFromState();
+              syncReservationAddressUI();
+            }
+          }
         }
       });
 
@@ -1449,13 +1525,19 @@
       function saveReservationContextForGuide() {
         try {
           const searchStr = `?productId=${encodeURIComponent(product.id)}&quantity=${encodeURIComponent(quantity)}`;
+          let savedAddress = (addressInput ? addressInput.value : '').trim();
+          if (!savedAddress && activeReservationAddress && activeReservationAddress.address) {
+            savedAddress = String(activeReservationAddress.address).trim();
+          }
           const ctx = {
+            userId: currentUserId,
+            userEmail: currentUserEmail,
             page: 'reservation.html',
             search: searchStr,
             url: 'reservation.html' + searchStr,
             fullName: inpFullName ? inpFullName.value : '',
             phone: inpPhone ? inpPhone.value : '',
-            address: addressInput ? addressInput.value : '',
+            address: savedAddress,
             notes: document.getElementById('inp-notes')?.value || '',
             deliveryOption,
             paymentMethod,
@@ -1474,10 +1556,20 @@
           if (!raw) return;
           const ctx = JSON.parse(raw);
           if (!ctx || ctx.page !== 'reservation.html') return;
+          if (!isOwnedByCurrentUser(ctx)) {
+            sessionStorage.removeItem('riceflow-checkout-context');
+            return;
+          }
 
           if (ctx.address !== undefined && addressInput) {
-            addressInput.value = ctx.address;
-            if (typeof syncReservationAddressUI === 'function') syncReservationAddressUI();
+            const hasSavedOrActiveAddr = Boolean(
+              (activeReservationAddress && activeReservationAddress.address && String(activeReservationAddress.address).trim()) ||
+              (user && user.address && String(user.address).trim())
+            );
+            if (!hasSavedOrActiveAddr && typeof ctx.address === 'string' && ctx.address.trim().length > 0) {
+              addressInput.value = ctx.address;
+              if (typeof syncReservationAddressUI === 'function') syncReservationAddressUI();
+            }
           }
           const inpNotes = document.getElementById('inp-notes');
           if (ctx.notes !== undefined && inpNotes) inpNotes.value = ctx.notes;
@@ -1514,6 +1606,36 @@
       if (sessionStorage.getItem('riceflow-proceed-from-guide') === 'true') {
         sessionStorage.removeItem('riceflow-proceed-from-guide');
       }
+
+      // Auto-bind form draft preservation after address & context are restored (preserves unfinished work safely without overwriting saved addresses)
+      autoBindDraftPreservation(
+        'order-form',
+        `reservation_draft_${productId}`,
+        () => ({
+          deliveryOption,
+          paymentMethod,
+          quantity,
+          notesVal: document.getElementById('inp-notes') ? document.getElementById('inp-notes').value : ''
+        }),
+        (customState) => {
+          if (customState) {
+            if (customState.deliveryOption === 'pickup' && divPic) {
+              divPic.click();
+            } else if (customState.deliveryOption === 'delivery' && divDel) {
+              divDel.click();
+            }
+            if (!isOutOfStock) {
+              if (customState.paymentMethod === 'cash' && divPmCash) divPmCash.click();
+              else if (customState.paymentMethod === 'gcash' && divPmGcash) divPmGcash.click();
+            }
+            const nEl = document.getElementById('inp-notes');
+            if (customState.notesVal && nEl && !nEl.value) nEl.value = customState.notesVal;
+          }
+          if (typeof syncReservationAddressUI === 'function') syncReservationAddressUI();
+          if (typeof refreshCalculations === 'function') refreshCalculations();
+        },
+        { preserveAddressIfPopulated: true }
+      );
 
       // Exit Confirmation Modal wiring
       document.body.addEventListener('click', (e) => {

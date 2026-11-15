@@ -309,6 +309,37 @@
       box-shadow: none !important;
     }
   </style>
+  <style id="riceflow-customers-responsive-css">
+    #admin-main-content, #admin-main-content * { min-width: 0; }
+    .customer-card-name,
+    .customer-card-email,
+    .customer-card-phone {
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+    .customer-card-email,
+    #modal-info-email,
+    #modal-info-address {
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+    }
+    @media (min-width: 768px) {
+      #edit-customer-dialog table { min-width: 0 !important; }
+    }
+    @media (max-width: 1023px) {
+      #admin-main-content { padding: 14px 12px !important; }
+      #admin-layout-container > #admin-right-workspace > header { min-height: 68px; height: auto; padding: 12px 16px; }
+      #admin-layout-container > #admin-right-workspace > header h2 { font-size: 21px !important; line-height: 1.25 !important; }
+    }
+    @media (max-width: 767px) {
+      #edit-customer-dialog { padding: 12px !important; }
+      #edit-customer-dialog > div { width: min(calc(100vw - 24px), 56rem) !important; max-width: calc(100vw - 24px) !important; max-height: calc(100dvh - 24px) !important; padding: 16px !important; overflow-x: hidden !important; overflow-y: auto !important; }
+    }
+    @media (max-width: 640px) {
+      #edit-customer-dialog .flex.items-center.justify-between.pt-4 { flex-direction: column-reverse; align-items: stretch; gap: 0.625rem; }
+      #edit-customer-dialog .flex.items-center.justify-between.pt-4 button { width: 100%; justify-content: center; }
+    }
+  </style>
   <style id="auth-guard-style">body { visibility: hidden !important; }</style>
 </head>
 <body class="bg-[#F5F5F5] min-h-screen">
@@ -320,16 +351,16 @@
   <div id="admin-layout-container"></div>
 
   <!-- VIEW CUSTOMER DETAILS DIALOG -->
-  <div id="edit-customer-dialog" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 sm:p-6 hidden">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl max-w-4xl w-full shadow-2xl p-6 sm:p-8 md:p-10 border border-gray-200 dark:border-gray-800 max-h-[90vh] overflow-y-auto overflow-x-auto animate-in fade-in zoom-in duration-200 text-gray-900 dark:text-gray-100">
+  <div id="edit-customer-dialog" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 hidden overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-customer-name">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl w-[min(calc(100vw-24px),56rem)] shadow-2xl p-4 sm:p-8 md:p-10 border border-gray-200 dark:border-gray-800 max-h-[calc(100dvh-24px)] sm:max-h-[90dvh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in duration-200 text-gray-900 dark:text-gray-100 mx-auto">
       
       <!-- Modal Header -->
-      <div class="flex justify-between items-start pb-4 border-b border-gray-200 dark:border-gray-800">
-        <div>
-          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100" id="modal-customer-name">Customer Details</h3>
-          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-0.5" id="modal-customer-id">Customer ID: #ID</p>
+      <div class="flex justify-between items-start gap-3 pb-4 border-b border-gray-200 dark:border-gray-800">
+        <div class="min-w-0 flex-1">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 break-words" id="modal-customer-name">Customer Details</h3>
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-0.5 break-words" id="modal-customer-id">Customer ID: #ID</p>
         </div>
-        <button id="close-customer-modal" class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 p-1 rounded-lg transition-colors cursor-pointer" title="Close">
+        <button id="close-customer-modal" class="shrink-0 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 p-1.5 rounded-lg transition-colors cursor-pointer" title="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-5 h-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -399,7 +430,10 @@
         <!-- Recent Orders Section -->
         <div class="space-y-3 px-1 sm:px-2">
           <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 pb-2">Recent Orders</h4>
-          <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+          <div id="modal-orders-cards" class="md:hidden space-y-2.5">
+            <!-- Dynamically assigned mobile cards -->
+          </div>
+          <div class="hidden md:block overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
             <table class="w-full text-left text-sm font-normal text-gray-900 dark:text-gray-100">
               <thead>
                 <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold uppercase text-xs tracking-wider bg-gray-50 dark:bg-gray-800/80">
@@ -553,13 +587,173 @@
       function renderCustomersBoard() {
         const filtered = getFilteredCustomers();
 
+        const orders = JSON.parse(localStorage.getItem('aurora-orders') || '[]');
+
+        function getCustomerOrders(client, allOrdersList) {
+          if (!client || !allOrdersList) return [];
+          const cId = String(client.id || '').toLowerCase();
+          const cUid = String(client.uid || client.firebaseUid || '').toLowerCase();
+          const cCusId = String(client.customerId || '').toLowerCase();
+          const cEmail = String(client.email || '').toLowerCase().trim();
+          const cName = String(client.name || '').toLowerCase().trim();
+
+          return allOrdersList.filter(o => {
+            const oUserId = String(o.userId || o.uid || '').toLowerCase();
+            const oCusId = String(o.customerId || '').toLowerCase();
+            const oEmail = String(o.customerEmail || o.email || '').toLowerCase().trim();
+            const oName = String(o.fullName || o.customerName || '').toLowerCase().trim();
+
+            if (cId && oUserId === cId) return true;
+            if (cUid && (oUserId === cUid || oCusId === cUid)) return true;
+            if (cCusId && (oCusId === cCusId || oUserId === cCusId)) return true;
+            if (cEmail && oEmail === cEmail) return true;
+            if (cName && oName && cName === oName) return true;
+
+            return false;
+          });
+        }
+
+        const customerRowsData = filtered.map((client, index) => {
+          const clientOrders = getCustomerOrders(client, orders);
+
+          // Total Spent: actual verified/paid amount only
+          let totalSpentAmount = 0;
+          if (clientOrders.length > 0) {
+            totalSpentAmount = clientOrders.reduce((sum, o) => sum + getCustomerVerifiedSpentAmount(o), 0);
+          } else if (client.totalSpent && !isNaN(parseFloat(client.totalSpent))) {
+            totalSpentAmount = parseFloat(client.totalSpent);
+          }
+
+          // Account status calculation (strictly independent of order status)
+          let statusBadgeHtml = '';
+          if (client.isArchived) {
+            statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 font-bold text-xs inline-block">Archived</span>`;
+          } else if (client.isActive === false || client.status === 'Suspended' || client.status === 'Inactive' || client.isSuspended === true) {
+            statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 font-bold text-xs inline-block">Suspended</span>`;
+          } else {
+            statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 font-bold text-xs inline-block">Active</span>`;
+          }
+
+          return {
+            client,
+            index,
+            totalSpentAmount,
+            statusBadgeHtml
+          };
+        });
+
+        const mobileCardsHtml = customerRowsData.map(({ client, index, totalSpentAmount, statusBadgeHtml }) => `
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 ${index % 2 === 0 ? 'bg-white dark:bg-[#111827]' : 'bg-gray-50/70 dark:bg-[#162032]'} p-4 shadow-2xs flex flex-col justify-between gap-3.5 text-left">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-100 dark:border-gray-800">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-bold text-black dark:text-white">
+                  Customer #${index + 1}
+                </span>
+                ${statusBadgeHtml}
+              </div>
+
+              <div class="space-y-2.5">
+                <div>
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 block">Name</span>
+                  <p class="customer-card-name font-semibold text-[16px] text-black dark:text-white leading-snug mt-0.5">${client.name || 'N/A'}</p>
+                </div>
+
+                <div>
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 block">Email</span>
+                  <p class="customer-card-email text-[14.5px] font-normal text-black dark:text-gray-200 leading-snug mt-0.5">${client.email || 'N/A'}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 block">Phone</span>
+                    <p class="customer-card-phone text-[14px] font-normal text-black dark:text-gray-200 mt-0.5">${client.phone || 'N/A'}</p>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 block">Total Spent</span>
+                    <p class="font-bold text-[15px] text-[#1E6C02] dark:text-emerald-400 mt-0.5">₱${totalSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-800">
+              <button
+                data-id="${client.id || ''}"
+                data-customer-id="${client.customerId || ''}"
+                data-email="${client.email || ''}"
+                data-uid="${client.uid || client.firebaseUid || ''}"
+                class="btn-edit-client min-h-[44px] px-3 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-[#1E6C02] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl font-semibold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="View Customer Details"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>View Details</span>
+              </button>
+              <button
+                data-id="${client.id || ''}"
+                data-customer-id="${client.customerId || ''}"
+                data-email="${client.email || ''}"
+                data-uid="${client.uid || client.firebaseUid || ''}"
+                class="btn-archive-direct min-h-[44px] px-3 py-2 ${client.isArchived ? 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-gray-800 dark:text-emerald-300 dark:border-emerald-700' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'} border rounded-xl font-semibold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="${client.isArchived ? 'Restore Customer Account' : 'Archive Customer Account'}"
+              >
+                ${client.isArchived ? `
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Restore</span>
+                ` : `
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                  <span>Archive</span>
+                `}
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        const desktopRowsHtml = customerRowsData.map(({ client, index, totalSpentAmount, statusBadgeHtml }) => `
+          <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors text-gray-900 dark:text-gray-100">
+            <td class="py-3.5 px-4 text-center font-medium text-sm customer-index-cell text-gray-900 dark:text-gray-100">${index + 1}</td>
+            <td class="py-3.5 px-4 font-medium text-[15.5px] text-black dark:text-white customer-name-cell">${client.name}</td>
+            <td class="py-3.5 px-4 text-[14.5px] text-black dark:text-white font-normal customer-email-cell">${client.email}</td>
+            <td class="py-3.5 px-4 text-[14.5px] text-black dark:text-white font-normal whitespace-nowrap customer-phone-cell">${client.phone || 'N/A'}</td>
+            <td class="py-3.5 px-4 font-medium text-[15px] text-black dark:text-white whitespace-nowrap customer-spent-cell">₱${totalSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="py-3.5 px-4 whitespace-nowrap">${statusBadgeHtml}</td>
+            <td class="py-3.5 px-4 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1.5">
+                <button 
+                  data-id="${client.id || ''}"
+                  data-customer-id="${client.customerId || ''}"
+                  data-email="${client.email || ''}"
+                  data-uid="${client.uid || client.firebaseUid || ''}"
+                  class="btn-edit-client p-1.5 text-black hover:text-emerald-700 dark:text-white dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg transition-colors cursor-pointer"
+                  title="View Customer Details"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+                <button 
+                  data-id="${client.id || ''}"
+                  data-customer-id="${client.customerId || ''}"
+                  data-email="${client.email || ''}"
+                  data-uid="${client.uid || client.firebaseUid || ''}"
+                  class="btn-archive-direct p-1.5 ${client.isArchived ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50' : 'text-black hover:text-rose-700 dark:text-white dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50'} rounded-lg transition-colors cursor-pointer"
+                  title="${client.isArchived ? 'Restore Customer Account' : 'Archive Customer Account'}"
+                >
+                  ${client.isArchived ? `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  ` : `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                  `}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
         targetSpace.innerHTML = `
           <div class="space-y-6 w-full">
             
             <!-- Top Toolbar -->
-            <div class="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-200/80 dark:border-gray-800 shadow-xs flex flex-nowrap items-center justify-between gap-3 sm:gap-4 w-full overflow-x-auto">
+            <div class="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-6 border border-gray-200/80 dark:border-gray-800 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4 w-full">
               <!-- 1. Search Bar -->
-              <div class="relative w-64 sm:w-72 shrink-0">
+              <div class="relative w-full xl:w-72 shrink-0">
                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </span>
@@ -568,14 +762,14 @@
                   id="inp-search-customers" 
                   placeholder="Search by name, phone, email..." 
                   value="${searchQuery}"
-                  class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-normal text-gray-900 dark:text-gray-100 pl-10 pr-4 py-2.5 rounded-xl focus:border-[#1E6C02] focus:bg-white dark:focus:bg-gray-800 outline-none transition-all"
+                  class="w-full min-h-[44px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-normal text-gray-900 dark:text-gray-100 pl-10 pr-4 py-2.5 rounded-xl focus:border-[#1E6C02] focus:bg-white dark:focus:bg-gray-800 outline-none transition-all"
                 />
               </div>
 
               <!-- Controls Toolbar Items 2-6 -->
-              <div class="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0 flex-nowrap">
+              <div class="flex flex-wrap xl:flex-nowrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto">
                 <!-- 2. Time Filter -->
-                <select id="select-time-filter" class="px-3.5 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer focus:border-[#1E6C02] outline-none transition-colors shrink-0">
+                <select id="select-time-filter" class="w-auto min-h-[40px] px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer focus:border-[#1E6C02] outline-none transition-colors shrink-0">
                   <option value="all" ${timeFilter === 'all' ? 'selected' : ''}>All Time</option>
                   <option value="today" ${timeFilter === 'today' ? 'selected' : ''}>Today</option>
                   <option value="this-week" ${timeFilter === 'this-week' ? 'selected' : ''}>This Week</option>
@@ -584,149 +778,80 @@
                 </select>
 
                 <!-- 3. View Archived -->
-                <button id="btn-toggle-archived-clients" class="flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-gray-900 dark:text-gray-100"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
-                  ${showArchived ? 'View Active' : 'View Archived'}
+                <button id="btn-toggle-archived-clients" class="w-auto min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-gray-900 dark:text-gray-100 shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                  <span>${showArchived ? 'View Active' : 'View Archived'}</span>
                 </button>
 
                 <!-- 4. Export Excel -->
-                <button id="btn-export-excel" class="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
-                  Export Excel
+                <button id="btn-export-excel" class="w-auto min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+                  <span>Export Excel</span>
                 </button>
 
                 <!-- 5. Export CSV -->
-                <button id="btn-export-csv" class="flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                  Export CSV
+                <button id="btn-export-csv" class="w-auto min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Export CSV</span>
                 </button>
 
                 <!-- 6. Export PDF -->
-                <button id="btn-export-pdf" class="flex items-center gap-2 px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>
-                  Export PDF
+                <button id="btn-export-pdf" class="w-auto min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl cursor-pointer transition-colors whitespace-nowrap shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>
+                  <span>Export PDF</span>
                 </button>
               </div>
             </div>
 
             <!-- Ledger Table Card -->
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 p-4 sm:p-6 shadow-xs space-y-4 text-gray-900 dark:text-gray-100 w-full">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-                ${showArchived ? 'List of Archived Customers' : 'List of Customers'}
-              </h3>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+                  ${showArchived ? 'List of Archived Customers' : 'List of Customers'}
+                </h3>
+                <span class="text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
+                  ${filtered.length} ${filtered.length === 1 ? 'Customer' : 'Customers'}
+                </span>
+              </div>
 
-              <div id="customers-table-container" class="w-full overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-                <table class="w-full text-left text-sm font-normal text-gray-900 dark:text-gray-100 min-w-[960px]">
-                  <thead>
-                    <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold uppercase text-xs tracking-wider bg-gray-50 dark:bg-gray-800">
-                      <th class="py-3.5 px-4 w-12 text-center">No.</th>
-                      <th class="py-3.5 px-4 w-[22%]">Name</th>
-                      <th class="py-3.5 px-4 w-[24%]">Email</th>
-                      <th class="py-3.5 px-4 w-[16%]">Phone</th>
-                      <th class="py-3.5 px-4 w-[15%]">Total Spent</th>
-                      <th class="py-3.5 px-4 w-[12%]">Status</th>
-                      <th class="py-3.5 px-4 text-center w-28">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-900 dark:text-gray-100 font-normal">
-                    ${(() => {
-                      const orders = JSON.parse(localStorage.getItem('aurora-orders') || '[]');
+              <div id="customers-table-container" class="w-full">
+                <!-- Mobile & Tablet Customer Cards -->
+                <div class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  ${mobileCardsHtml}
+                  ${filtered.length === 0 ? `
+                    <div class="col-span-full py-10 text-center text-gray-600 dark:text-gray-400 font-medium text-sm bg-gray-50/50 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                      No customer profiles matched the search criteria.
+                    </div>
+                  ` : ''}
+                </div>
 
-                      function getCustomerOrders(client, allOrdersList) {
-                        if (!client || !allOrdersList) return [];
-                        const cId = String(client.id || '').toLowerCase();
-                        const cUid = String(client.uid || client.firebaseUid || '').toLowerCase();
-                        const cCusId = String(client.customerId || '').toLowerCase();
-                        const cEmail = String(client.email || '').toLowerCase().trim();
-                        const cName = String(client.name || '').toLowerCase().trim();
-
-                        return allOrdersList.filter(o => {
-                          const oUserId = String(o.userId || o.uid || '').toLowerCase();
-                          const oCusId = String(o.customerId || '').toLowerCase();
-                          const oEmail = String(o.customerEmail || o.email || '').toLowerCase().trim();
-                          const oName = String(o.fullName || o.customerName || '').toLowerCase().trim();
-
-                          if (cId && oUserId === cId) return true;
-                          if (cUid && (oUserId === cUid || oCusId === cUid)) return true;
-                          if (cCusId && (oCusId === cCusId || oUserId === cCusId)) return true;
-                          if (cEmail && oEmail === cEmail) return true;
-                          if (cName && oName && cName === oName) return true;
-
-                          return false;
-                        });
-                      }
-
-                      return filtered.map((client, index) => {
-                        const clientOrders = getCustomerOrders(client, orders);
-
-                        // Total Spent: actual verified/paid amount only
-                        let totalSpentAmount = 0;
-                        if (clientOrders.length > 0) {
-                          totalSpentAmount = clientOrders.reduce((sum, o) => sum + getCustomerVerifiedSpentAmount(o), 0);
-                        } else if (client.totalSpent && !isNaN(parseFloat(client.totalSpent))) {
-                          totalSpentAmount = parseFloat(client.totalSpent);
-                        }
-
-                        // Account status calculation (strictly independent of order status)
-                        let statusBadgeHtml = '';
-                        if (client.isArchived) {
-                          statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 font-bold text-xs inline-block">Archived</span>`;
-                        } else if (client.isActive === false || client.status === 'Suspended' || client.status === 'Inactive' || client.isSuspended === true) {
-                          statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 font-bold text-xs inline-block">Suspended</span>`;
-                        } else {
-                          statusBadgeHtml = `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 font-bold text-xs inline-block">Active</span>`;
-                        }
-
-                        return `
-                          <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors text-gray-900 dark:text-gray-100">
-                            <td class="py-3.5 px-4 text-center font-medium text-sm customer-index-cell text-gray-900 dark:text-gray-100">${index + 1}</td>
-                            <td class="py-3.5 px-4 font-medium text-[15.5px] text-black dark:text-white customer-name-cell">${client.name}</td>
-                            <td class="py-3.5 px-4 text-[14.5px] text-black dark:text-white font-normal customer-email-cell">${client.email}</td>
-                            <td class="py-3.5 px-4 text-[14.5px] text-black dark:text-white font-normal whitespace-nowrap customer-phone-cell">${client.phone || 'N/A'}</td>
-                            <td class="py-3.5 px-4 font-medium text-[15px] text-black dark:text-white whitespace-nowrap customer-spent-cell">₱${totalSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td class="py-3.5 px-4 whitespace-nowrap">${statusBadgeHtml}</td>
-                            <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                              <div class="flex items-center justify-center gap-1.5">
-                                <button 
-                                  data-id="${client.id || ''}"
-                                  data-customer-id="${client.customerId || ''}"
-                                  data-email="${client.email || ''}"
-                                  data-uid="${client.uid || client.firebaseUid || ''}"
-                                  class="btn-edit-client p-1.5 text-black hover:text-emerald-700 dark:text-white dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg transition-colors cursor-pointer"
-                                  title="View Customer Details"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                </button>
-                                <button 
-                                  data-id="${client.id || ''}"
-                                  data-customer-id="${client.customerId || ''}"
-                                  data-email="${client.email || ''}"
-                                  data-uid="${client.uid || client.firebaseUid || ''}"
-                                  class="btn-archive-direct p-1.5 ${client.isArchived ? 'text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50' : 'text-black hover:text-rose-700 dark:text-white dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50'} rounded-lg transition-colors cursor-pointer"
-                                  title="${client.isArchived ? 'Restore Customer Account' : 'Archive Customer Account'}"
-                                >
-                                  ${client.isArchived ? `
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                                  ` : `
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
-                                  `}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        `;
-                      }).join('')
-                    })()}
-
-                    ${filtered.length === 0 ? `
-                      <tr>
-                        <td colspan="7" class="py-8 text-center text-gray-500 dark:text-gray-400 font-medium text-sm">
-                          No customer profiles matched the search criteria.
-                        </td>
+                <!-- Desktop Table View (Preserved Intact) -->
+                <div class="hidden lg:block w-full overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                  <table class="w-full text-left text-sm font-normal text-gray-900 dark:text-gray-100 min-w-[960px]">
+                    <thead>
+                      <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 font-semibold uppercase text-xs tracking-wider bg-gray-50 dark:bg-gray-800">
+                        <th class="py-3.5 px-4 w-12 text-center">No.</th>
+                        <th class="py-3.5 px-4 w-[22%]">Name</th>
+                        <th class="py-3.5 px-4 w-[24%]">Email</th>
+                        <th class="py-3.5 px-4 w-[16%]">Phone</th>
+                        <th class="py-3.5 px-4 w-[15%]">Total Spent</th>
+                        <th class="py-3.5 px-4 w-[12%]">Status</th>
+                        <th class="py-3.5 px-4 text-center w-28">Action</th>
                       </tr>
-                    ` : ''}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-gray-900 dark:text-gray-100 font-normal">
+                      ${desktopRowsHtml}
+
+                      ${filtered.length === 0 ? `
+                        <tr>
+                          <td colspan="7" class="py-8 text-center text-gray-500 dark:text-gray-400 font-medium text-sm">
+                            No customer profiles matched the search criteria.
+                          </td>
+                        </tr>
+                      ` : ''}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -1008,8 +1133,9 @@
         document.getElementById('modal-stat-completed-orders').textContent = String(completedOrdersCount);
         document.getElementById('modal-stat-reservations').textContent = String(reservationsCount);
 
-        // Populate Recent Orders Table
+        // Populate Recent Orders (Responsive Mobile Cards + Desktop Table)
         const borderOrdersBody = document.getElementById('modal-orders-tbody');
+        const mobileOrdersCards = document.getElementById('modal-orders-cards');
         const rec = clientOrders.length > 0 ? clientOrders : (match.recentOrders || []);
 
         if (rec.length === 0) {
@@ -1018,6 +1144,13 @@
               <td colspan="4" class="py-6 text-center text-black dark:text-white font-bold text-sm">No recent orders found for this customer.</td>
             </tr>
           `;
+          if (mobileOrdersCards) {
+            mobileOrdersCards.innerHTML = `
+              <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-center text-black dark:text-white font-bold text-sm">
+                No recent orders found for this customer.
+              </div>
+            `;
+          }
         } else {
           const sortedOrders = [...rec].sort((a, b) => {
             const dA = new Date(a.createdAt || a.date || 0).getTime();
@@ -1025,7 +1158,7 @@
             return dB - dA;
           });
 
-          borderOrdersBody.innerHTML = sortedOrders.map(ord => {
+          const orderViewModels = sortedOrders.map(ord => {
             let col = 'bg-gray-100 text-black dark:text-white border border-gray-300';
             const s = (ord.status || '').toLowerCase().replace(/_/g, '-');
             if (s === 'delivered' || s === 'completed') col = 'bg-emerald-100 text-emerald-900 border border-emerald-300';
@@ -1038,18 +1171,36 @@
               ? ord.items.map(i => `${i.product?.name || i.name || 'Rice'} (${i.quantity || 1}x)`).join(', ') 
               : (ord.product || ord.item || '25kg Rice');
             const amt = parseFloat(ord.total || ord.totalPrice || ord.amount || ord.billTotal || 0);
+            const statusText = ord.status || 'Pending';
+            return { col, dateStr, prodNames, amt, statusText };
+          });
 
-            return `
-              <tr class="hover:bg-gray-50/80 transition-colors">
-                <td class="py-3 px-4 font-normal text-black dark:text-white text-sm whitespace-nowrap">${dateStr}</td>
-                <td class="py-3 px-4 text-black dark:text-white font-medium text-sm max-w-[220px] truncate">${prodNames}</td>
-                <td class="py-3 px-4 text-black dark:text-white font-bold text-sm">₱${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="py-3 px-4 text-right whitespace-nowrap">
-                  <span class="px-2.5 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold ${col}">${ord.status || 'Pending'}</span>
-                </td>
-              </tr>
-            `;
-          }).join('');
+          borderOrdersBody.innerHTML = orderViewModels.map(({ col, dateStr, prodNames, amt, statusText }) => `
+            <tr class="hover:bg-gray-50/80 transition-colors">
+              <td class="py-3 px-4 font-normal text-black dark:text-white text-sm whitespace-nowrap">${dateStr}</td>
+              <td class="py-3 px-4 text-black dark:text-white font-medium text-sm break-words whitespace-normal">${prodNames}</td>
+              <td class="py-3 px-4 text-black dark:text-white font-bold text-sm whitespace-nowrap">₱${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+              <td class="py-3 px-4 text-right whitespace-nowrap">
+                <span class="px-2.5 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold ${col}">${statusText}</span>
+              </td>
+            </tr>
+          `).join('');
+
+          if (mobileOrdersCards) {
+            mobileOrdersCards.innerHTML = orderViewModels.map(({ col, dateStr, prodNames, amt, statusText }) => `
+              <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/50 p-3.5 space-y-2">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">${dateStr}</span>
+                  <span class="px-2.5 py-1 rounded-full text-[11px] uppercase tracking-wider font-bold ${col}">${statusText}</span>
+                </div>
+                <p class="text-sm font-medium text-black dark:text-white break-words leading-snug">${prodNames}</p>
+                <div class="flex items-center justify-between pt-1 border-t border-gray-200/80 dark:border-gray-700/80 text-xs">
+                  <span class="font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Amount</span>
+                  <span class="text-sm font-bold text-black dark:text-white">₱${amt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                </div>
+              </div>
+            `).join('');
+          }
         }
 
         editDialog.classList.remove('hidden');

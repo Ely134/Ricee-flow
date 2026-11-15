@@ -431,7 +431,7 @@
 @media (max-width: 640px) {
   #admin-main-content { padding: 14px 12px !important; }
   #admin-main-content .bg-white.rounded-3xl.border { padding: 14px !important; }
-  #btn-open-add-dialog { width: 100%; justify-content: center; }
+  #btn-toggle-archived, #btn-open-add-dialog { width: 100%; justify-content: center; min-height: 44px; }
   #add-product-dialog { padding: 8px !important; align-items: stretch !important; }
   #add-product-dialog > div { width: 100% !important; max-width: 100% !important; max-height: calc(100dvh - 16px) !important; border-radius: 18px !important; }
   #add-product-dialog > div > div:first-child { padding: 14px 16px !important; }
@@ -915,9 +915,9 @@
             ${filterBannerHtml}
             
             <!-- Controls bar block -->
-            <div class="bg-white rounded-3xl p-6 border border-gray-200 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200 shadow-xs flex flex-col lg:flex-row gap-3.5 sm:gap-4 items-stretch lg:items-center justify-between">
               <!-- Search -->
-              <div class="relative w-full md:max-w-md">
+              <div class="relative w-full lg:max-w-md">
                 <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </span>
@@ -926,35 +926,153 @@
                   id="inp-search-products" 
                   placeholder="Search products..." 
                   value="${searchQuery}"
-                  class="w-full bg-gray-50 border border-gray-200 text-[15px] font-normal text-gray-900 dark:text-white pl-11 pr-4 py-2.5 rounded-xl focus:border-[#1E6C02] focus:bg-white outline-none transition-all shadow-2xs"
+                  class="w-full min-h-[44px] bg-gray-50 border border-gray-200 text-[15px] font-normal text-gray-900 dark:text-white pl-11 pr-4 py-2.5 rounded-xl focus:border-[#1E6C02] focus:bg-white outline-none transition-all shadow-2xs"
                 />
               </div>
 
               <!-- Switchers and actions button -->
-              <div class="flex items-center gap-3 w-full md:w-auto shrink-0 justify-end">
-                <button id="btn-toggle-archived" class="flex items-center gap-2 h-11 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-[14px] rounded-xl cursor-pointer transition-colors">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5 text-gray-550"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
-                  ${showArchived ? 'View Active' : 'View Archived'}
+              <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto shrink-0 lg:justify-end">
+                <button id="btn-toggle-archived" class="flex items-center justify-center gap-2 min-h-[44px] h-11 px-4 sm:px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-[14px] rounded-xl cursor-pointer transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4.5 h-4.5 text-gray-550 shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                  <span>${showArchived ? 'View Active' : 'View Archived'}</span>
                 </button>
                 ${isAdmin ? `
-                <button id="btn-open-add-dialog" class="flex items-center gap-2 h-11 px-5 bg-[#1E6C02] text-white hover:bg-[#145001] font-semibold text-[14.5px] rounded-xl shadow-xs cursor-pointer transition-colors">
+                <button id="btn-open-add-dialog" class="flex items-center justify-center gap-2 min-h-[44px] h-11 px-4 sm:px-5 bg-[#1E6C02] text-white hover:bg-[#145001] font-semibold text-[14.5px] rounded-xl shadow-xs cursor-pointer transition-colors">
                   + Add New Product
                 </button>
                 ` : `
-                <button id="btn-open-add-dialog" disabled title="Only the Administrator can manage products and inventory." class="flex items-center gap-2 h-11 px-5 bg-gray-200 text-gray-400 border border-gray-300 font-semibold text-[14.5px] rounded-xl cursor-not-allowed opacity-75">
+                <button id="btn-open-add-dialog" disabled title="Only the Administrator can manage products and inventory." class="flex items-center justify-center gap-2 min-h-[44px] h-11 px-4 sm:px-5 bg-gray-200 text-gray-400 border border-gray-300 font-semibold text-[14.5px] rounded-xl cursor-not-allowed opacity-75">
                   + Add New Product
                 </button>
                 `}
               </div>
             </div>
  
-            <!-- Table section -->
-            <div class="bg-white rounded-3xl border border-gray-200 p-6 shadow-xs space-y-4">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                ${showArchived ? 'Archived Products' : 'Product Stock'}
-              </h3>
- 
-              <div class="overflow-x-auto overflow-y-visible" style="transform: rotateX(180deg); -webkit-transform: rotateX(180deg);" id="admin-products-table-scroll">
+            <!-- Product Stock Cards (Mobile/Tablet) & Table (Desktop) -->
+            <div class="bg-white rounded-3xl border border-gray-200 p-4 sm:p-6 shadow-xs space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  ${showArchived ? 'Archived Products' : 'Product Stock'}
+                </h3>
+                <span class="text-xs font-semibold text-gray-600 dark:text-gray-300">${filtered.length} product${filtered.length === 1 ? '' : 's'}</span>
+              </div>
+
+              <!-- Mobile & Tablet Product Cards -->
+              <div class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                ${filtered.map((item, index) => {
+                  const cur = item.availableStock !== undefined ? item.availableStock : (item.stock !== undefined ? item.stock : 0);
+                  const res = item.reservedStock !== undefined ? item.reservedStock : 0;
+                  const av = cur;
+
+                  let isHighlighted = false;
+                  let cardHighlightClass = 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60';
+                  if (stockFilterParam === 'healthy' && av > 20) {
+                    isHighlighted = true;
+                    cardHighlightClass = 'bg-emerald-50/90 dark:bg-emerald-950/70 border-2 border-emerald-500';
+                  } else if (stockFilterParam === 'low' && av >= 1 && av <= 20) {
+                    isHighlighted = true;
+                    cardHighlightClass = 'bg-amber-50/90 dark:bg-amber-950/70 border-2 border-amber-500';
+                  } else if (stockFilterParam === 'out' && av === 0) {
+                    isHighlighted = true;
+                    cardHighlightClass = 'bg-red-50/90 dark:bg-red-950/70 border-2 border-red-500';
+                  }
+
+                  let currentStockColorClass = 'text-gray-900 dark:text-white font-semibold';
+                  if (cur === 0) {
+                    currentStockColorClass = 'text-red-600 font-semibold';
+                  } else if (cur <= 20) {
+                    currentStockColorClass = 'text-amber-600 font-semibold';
+                  }
+
+                  return `
+                    <div id="product-card-${item.id}" class="${cardHighlightClass} rounded-2xl border p-4 shadow-2xs flex flex-col justify-between gap-3.5 text-left">
+                      <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-800 dark:text-gray-200">
+                            #${index + 1}
+                          </span>
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold text-[11.5px] tracking-wide uppercase border border-gray-200 dark:border-gray-700">
+                            ${item.type || 'Rice'} Rice
+                          </span>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                          <div class="w-14 h-14 bg-[#F9F9F9] rounded-xl border border-gray-200 shrink-0 p-1.5 flex items-center justify-center overflow-hidden shadow-2xs">
+                            <img src="${item.image || 'https://i.pinimg.com/736x/69/66/78/696678fbb7edb048d016178c6034872d.jpg'}" alt="${item.name}" class="max-w-full max-h-full object-contain rounded-lg" />
+                          </div>
+                          <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-gray-900 dark:text-white text-[15.5px] leading-snug break-words product-name-cell">${item.name}</p>
+                            <p class="text-[14.5px] font-semibold text-gray-900 dark:text-white mt-1">
+                              ₱${item.price?.toLocaleString()}.00
+                              <span class="text-[12.5px] text-gray-600 dark:text-gray-400 font-normal uppercase">/ ${item.weight || item.unit || '25kg'}</span>
+                            </p>
+                            ${isHighlighted ? `<span class="inline-block mt-1 text-[11.5px] font-semibold uppercase ${stockFilterParam === 'healthy' ? 'text-emerald-800 dark:text-emerald-200' : (stockFilterParam === 'low' ? 'text-amber-800 dark:text-amber-200' : 'text-red-800 dark:text-red-200')}">★ Highlighted Product</span>` : ''}
+                          </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800">
+                          <div class="rounded-xl bg-gray-50/90 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Available Stock</p>
+                            <p class="text-[14.5px] mt-0.5 ${currentStockColorClass}">${cur} Sack${cur !== 1 ? 's' : ''}</p>
+                          </div>
+                          <div class="rounded-xl bg-gray-50/90 dark:bg-slate-800/60 border border-gray-200/80 dark:border-slate-700 px-3 py-2">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Reserved Stock</p>
+                            <p class="text-[14.5px] mt-0.5 ${res > 0 ? 'text-red-600 font-semibold' : 'text-gray-700 dark:text-gray-300 font-medium'}">${res} Sack${res !== 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Touch-Friendly Card Actions -->
+                      <div class="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+                        ${isAdmin ? `
+                        <button
+                          data-id="${item.id}"
+                          title="Update Product Information"
+                          class="btn-info-click min-h-[44px] px-2.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer transition-colors inline-flex items-center justify-center gap-1.5 text-xs font-semibold"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 shrink-0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          data-id="${item.id}"
+                          title="Adjust Stock Inventory"
+                          class="btn-stock-click min-h-[44px] px-2.5 py-2 bg-[#1E6C02] hover:bg-[#145001] text-white rounded-xl cursor-pointer transition-colors inline-flex items-center justify-center gap-1.5 text-xs font-semibold"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 shrink-0"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                          <span>Stock</span>
+                        </button>
+                        <button
+                          data-id="${item.id}"
+                          title="${showArchived ? 'Restore Product' : 'Archive Product'}"
+                          class="btn-archive-click min-h-[44px] px-2.5 py-2 ${showArchived ? 'bg-teal-600 hover:bg-teal-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-xl cursor-pointer transition-colors inline-flex items-center justify-center gap-1.5 text-xs font-semibold"
+                        >
+                          ${showArchived ? `
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 shrink-0"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            <span>Restore</span>
+                          ` : `
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 shrink-0"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                            <span>Archive</span>
+                          `}
+                        </button>
+                        ` : `
+                        <button disabled title="Only the Administrator can manage products and inventory." class="min-h-[44px] px-2.5 py-2 text-gray-400 bg-gray-100/60 rounded-xl cursor-not-allowed opacity-60 inline-flex items-center justify-center gap-1 text-xs font-semibold">Edit</button>
+                        <button disabled title="Only the Administrator can manage products and inventory." class="min-h-[44px] px-2.5 py-2 text-gray-400 bg-gray-100/60 rounded-xl cursor-not-allowed opacity-60 inline-flex items-center justify-center gap-1 text-xs font-semibold">Stock</button>
+                        <button disabled title="Only the Administrator can manage products and inventory." class="min-h-[44px] px-2.5 py-2 text-gray-400 bg-gray-100/60 rounded-xl cursor-not-allowed opacity-60 inline-flex items-center justify-center gap-1 text-xs font-semibold">${showArchived ? 'Restore' : 'Archive'}</button>
+                        `}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+
+                ${filtered.length === 0 ? `
+                  <div class="md:col-span-2 py-12 text-center text-gray-600 dark:text-gray-400 font-medium text-[15px]">
+                    No products matched current settings.
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Desktop Table -->
+              <div class="hidden lg:block overflow-x-auto overflow-y-visible" style="transform: rotateX(180deg); -webkit-transform: rotateX(180deg);" id="admin-products-table-scroll">
                 <div style="transform: rotateX(180deg); -webkit-transform: rotateX(180deg); padding-top: 10px;">
                   <table class="w-full text-left text-sm font-semibold text-gray-700 min-w-[1150px]">
                     <thead>
@@ -1103,8 +1221,7 @@
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
+              </div>
             </div>
           </div>
         `;
@@ -2002,25 +2119,28 @@
             }
 
             const rowId = `product-row-${matchedProduct.id}`;
+            const cardId = `product-card-${matchedProduct.id}`;
             let attempts = 0;
             const maxAttempts = 35; // 35 * 70ms = ~2.5s poll
             const pollRowInterval = setInterval(() => {
               attempts++;
-              const row = document.getElementById(rowId);
-              if (row) {
+              const rowEl = document.getElementById(rowId);
+              const cardEl = document.getElementById(cardId);
+              const visibleTarget = (cardEl && cardEl.offsetParent !== null) ? cardEl : ((rowEl && rowEl.offsetParent !== null) ? rowEl : (rowEl || cardEl));
+              if (visibleTarget) {
                 clearInterval(pollRowInterval);
 
-                // Scroll smoothly to center the product row
-                row.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                // Scroll smoothly to center the product row or mobile card
+                visibleTarget.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
 
                 // Apply soft visible highlight outline & background
-                row.classList.add('srg-target-product-highlight');
+                visibleTarget.classList.add('srg-target-product-highlight');
 
                 // Gracefully fade out after 3.5 seconds
                 setTimeout(() => {
-                  row.classList.add('srg-highlight-fading');
+                  visibleTarget.classList.add('srg-highlight-fading');
                   setTimeout(() => {
-                    row.classList.remove('srg-target-product-highlight', 'srg-highlight-fading');
+                    visibleTarget.classList.remove('srg-target-product-highlight', 'srg-highlight-fading');
                   }, 800);
                 }, 3500);
               } else if (attempts >= maxAttempts) {

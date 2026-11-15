@@ -514,6 +514,12 @@ export function sanitizeInput(str) {
     .replace(/\//g, '&#x2F;');
 }
 
+// Plain-text address sanitizer: strips HTML tag delimiters while keeping #, /, &, ', and punctuation intact for inputs
+export function sanitizeAddressText(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[<>]/g, '').trim();
+}
+
 // Simulated Cryptographic SHA-256 password hashing helper (client-side implementation)
 export async function hashPassword(password) {
   const msgUint8 = new TextEncoder().encode(password);
@@ -768,7 +774,7 @@ export function initDB() {
               const localTime = localUser?.updatedAt ? new Date(localUser.updatedAt).getTime() : 0;
 
               // Firestore is the source of truth: takes precedence if remote is newer, or if local is missing fields
-              if (!localUser || remoteTime >= localTime || (!localUser.phone && remoteProfile.phone) || (!localUser.address && remoteProfile.address)) {
+              if (!localUser || remoteTime >= localTime || (!localUser.phone && remoteProfile.phone) || (!localUser.address && remoteProfile.address) || (!localUser.addressDetails && remoteProfile.addressDetails) || (!localUser.coordinates && remoteProfile.coordinates)) {
                 const mergedUser = { ...localUser, ...remoteProfile, firebaseUid: fbUser.uid };
                 localStorage.setItem('aurora-user', JSON.stringify(mergedUser));
                 localStorage.setItem('aurora-logged-in', 'true');
@@ -2328,6 +2334,29 @@ export async function loginUser(emailOrUsername, password) {
       syncUsersAndCustomers();
 
       resetFailedAttempts(cleanEmail);
+      // Clear any leftover checkout session / drafts belonging to a different user
+      try {
+        const sAddr = JSON.parse(sessionStorage.getItem('riceflow-active-checkout-address') || 'null');
+        if (sAddr && sAddr.userEmail && String(sAddr.userEmail).toLowerCase() !== cleanEmail) {
+          sessionStorage.removeItem('riceflow-active-checkout-address');
+        }
+        const sCtx = JSON.parse(sessionStorage.getItem('riceflow-checkout-context') || 'null');
+        if (sCtx && sCtx.userEmail && String(sCtx.userEmail).toLowerCase() !== cleanEmail) {
+          sessionStorage.removeItem('riceflow-checkout-context');
+        }
+        sessionStorage.removeItem('riceflow-proceed-from-guide');
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('riceflow_draft_')) {
+            try {
+              const d = JSON.parse(localStorage.getItem(k) || 'null');
+              if (!d || (d.userEmail && String(d.userEmail).toLowerCase() !== cleanEmail)) {
+                localStorage.removeItem(k);
+              }
+            } catch (_) { localStorage.removeItem(k); }
+          }
+        });
+      } catch (_) {}
+
       localStorage.setItem('aurora-user', JSON.stringify(mergedUser));
       localStorage.setItem('aurora-logged-in', 'true');
       if (typeof document !== 'undefined' && document.getElementById('navbar-container')) {
@@ -2363,6 +2392,8 @@ export async function loginUser(emailOrUsername, password) {
       email: cleanEmail,
       phone: matchedCustomer?.phone || '',
       address: matchedCustomer?.shippingAddress || matchedCustomer?.address || '',
+      coordinates: matchedCustomer?.coordinates || null,
+      addressDetails: matchedCustomer?.addressDetails || null,
       gender: matchedCustomer?.gender || 'Other',
       password: hashedPassword,
       role: 'customer',
@@ -2374,6 +2405,15 @@ export async function loginUser(emailOrUsername, password) {
     syncUsersAndCustomers();
 
     resetFailedAttempts(cleanEmail);
+    try {
+      sessionStorage.removeItem('riceflow-active-checkout-address');
+      sessionStorage.removeItem('riceflow-checkout-context');
+      sessionStorage.removeItem('riceflow-proceed-from-guide');
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('riceflow_draft_')) localStorage.removeItem(k);
+      });
+    } catch (_) {}
+
     localStorage.setItem('aurora-user', JSON.stringify(restoredUser));
     localStorage.setItem('aurora-logged-in', 'true');
     if (typeof document !== 'undefined' && document.getElementById('navbar-container')) {
@@ -2548,7 +2588,7 @@ export async function registerUser(userData) {
     phone: normPhone.canonical,
     phoneE164: normPhone.e164,
     phoneVerified: false,
-    address: sanitizeInput(address),
+    address: sanitizeAddressText(address),
     gender: sanitizeInput(gender)
   };
 
@@ -2568,7 +2608,7 @@ export async function registerUser(userData) {
   // Instantly synchronize with customer ledger
   syncUsersAndCustomers();
 
-  // Persist newly generated customer record directly to Firestore customers collection
+  // Persist newly generated customer record directly to Firestore customers & users collections
   try {
     const allCustomers = JSON.parse(localStorage.getItem('aurora-customers') || '[]');
     const cleanEmail = String(email || '').trim().toLowerCase();
@@ -2594,6 +2634,8 @@ export async function registerUser(userData) {
 
     const custPayload = matchedCustomer ? {
       ...matchedCustomer,
+      uid: fbUid || matchedCustomer.uid || newUser.id,
+      firebaseUid: fbUid || matchedCustomer.firebaseUid || null,
       isVIP: matchedCustomer.isVIP ?? false
     } : {
       id: newUser.id,
@@ -2626,15 +2668,32 @@ export async function registerUser(userData) {
     console.warn('[FIREBASE] Notice saving customer to Firestore:', custErr);
   }
 
-  // Also persist user document to Firestore users collection
+  // Also persist user document(s) to Firestore users collection
   try {
+    const userWrites = [];
     const userDocId = newUser.id || fbUid;
     if (userDocId) {
-      await saveFirestoreDoc('users', userDocId, newUser);
-      if (fbUid && fbUid !== userDocId) {
-        saveFirestoreDoc('users', fbUid, newUser).catch(() => {});
+      userWrites.push(saveFirestoreDoc('users', userDocId, newUser));
+    }
+    if (fbUid && fbUid !== userDocId) {
+      userWrites.push(saveFirestoreDoc('users', fbUid, newUser));
+      if (`user-${fbUid}` !== userDocId) {
+        userWrites.push(saveFirestoreDoc('users', `user-${fbUid}`, newUser));
       }
     }
+    if (userWrites.length > 0) {
+      await Promise.all(userWrites);
+    }
+  } catch (_) {}
+
+  // Ensure new customer starts with clean checkout session state
+  try {
+    sessionStorage.removeItem('riceflow-active-checkout-address');
+    sessionStorage.removeItem('riceflow-checkout-context');
+    sessionStorage.removeItem('riceflow-proceed-from-guide');
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('riceflow_draft_')) localStorage.removeItem(k);
+    });
   } catch (_) {}
 
   // Set session cache
@@ -2705,6 +2764,11 @@ export function logoutUser() {
   sessionStorage.removeItem('riceflow-active-checkout-address');
   sessionStorage.removeItem('riceflow-checkout-context');
   sessionStorage.removeItem('riceflow-proceed-from-guide');
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('riceflow_draft_')) localStorage.removeItem(k);
+    });
+  } catch (_) {}
 
   // Immediately refresh customer header/account UI to logged-out Login state
   if (typeof document !== 'undefined' && document.getElementById('navbar-container')) {
@@ -2857,7 +2921,8 @@ export function logoutAdmin() {
   localStorage.setItem('aurora-admin-logged-in', 'false');
 }
 
-export function saveCurrentUser(user) {
+export function saveCurrentUser(user, options = {}) {
+  const { syncRemote = true } = options;
   safeLocalStorageSet('aurora-user', JSON.stringify(user));
   // also save to list and sync targeted user document
   const users = JSON.parse(localStorage.getItem('aurora-users') || '[]');
@@ -2879,19 +2944,27 @@ export function saveCurrentUser(user) {
     users.push(user);
   }
 
-  const syncDocId = user.id || user.uid || user.firebaseUid || (user.email ? user.email.replace(/[@.]/g, '_') : 'user_main');
-  setItemAndSync('aurora-users', JSON.stringify(users), { colName: 'users', docId: syncDocId, docData: user });
+  if (syncRemote) {
+    const syncDocId = user.id || user.uid || user.firebaseUid || (user.email ? user.email.replace(/[@.]/g, '_') : 'user_main');
+    setItemAndSync('aurora-users', JSON.stringify(users), { colName: 'users', docId: syncDocId, docData: user });
+  } else {
+    safeLocalStorageSet('aurora-users', JSON.stringify(users));
+  }
 }
 
 export async function updateUser(updatedFields) {
   const user = getCurrentUser();
-  if (!user) return false;
+  if (!user) {
+    throw new Error('No authenticated user account found. Please log in again.');
+  }
 
   const sanitizedFields = {};
   for (const key in updatedFields) {
     if (key === 'profilePicture' || key === 'avatar') {
       // Preserve base64 image data strings and URLs without corrupting forward slashes via HTML entity escaping
       sanitizedFields[key] = updatedFields[key];
+    } else if (key === 'address' || key === 'shippingAddress') {
+      sanitizedFields[key] = typeof updatedFields[key] === 'string' ? sanitizeAddressText(updatedFields[key]) : updatedFields[key];
     } else if (key === 'coordinates' || key === 'deliveryLocation') {
       const c = updatedFields[key];
       if (c && typeof c === 'object' && !isNaN(Number(c.lat)) && !isNaN(Number(c.lng))) {
@@ -2906,6 +2979,13 @@ export async function updateUser(updatedFields) {
     }
   }
 
+  // Keep address & shippingAddress aligned
+  if (sanitizedFields.address !== undefined && sanitizedFields.shippingAddress === undefined) {
+    sanitizedFields.shippingAddress = sanitizedFields.address;
+  } else if (sanitizedFields.shippingAddress !== undefined && sanitizedFields.address === undefined) {
+    sanitizedFields.address = sanitizedFields.shippingAddress;
+  }
+
   // If profilePicture was not provided or is null without an explicit removal request, preserve existing profilePicture
   if (
     (sanitizedFields.profilePicture === undefined || (sanitizedFields.profilePicture === null && !updatedFields.removeProfilePicture)) &&
@@ -2914,7 +2994,7 @@ export async function updateUser(updatedFields) {
     sanitizedFields.profilePicture = user.profilePicture;
   }
 
-  // Prevent stale coordinates when customer address text is modified without new explicit coordinates
+  // Prevent stale coordinates/details when customer address text is modified without new explicit coordinates
   if (
     sanitizedFields.address !== undefined &&
     user.address &&
@@ -2922,12 +3002,17 @@ export async function updateUser(updatedFields) {
     updatedFields.coordinates === undefined
   ) {
     sanitizedFields.coordinates = null;
+    if (updatedFields.addressDetails === undefined) {
+      sanitizedFields.addressDetails = null;
+    }
   }
 
+  const resolvedFirebaseUid = user.firebaseUid || user.uid || auth?.currentUser?.uid || null;
   const updatedAt = new Date().toISOString();
   const updatedUser = { 
     ...user, 
     ...sanitizedFields,
+    firebaseUid: resolvedFirebaseUid || user.firebaseUid || null,
     updatedAt 
   };
 
@@ -2935,10 +3020,36 @@ export async function updateUser(updatedFields) {
   // If Firestore write fails, this throws and prevents claiming success
   await saveCustomerProfileToFirestore(updatedUser);
 
-  // 2. Update active user session
-  saveCurrentUser(updatedUser);
+  // 2. Update active user session (skip duplicate unawaited remote write since step 1 awaited it)
+  saveCurrentUser(updatedUser, { syncRemote: false });
 
-  // 3. Update aurora-users cache
+  // 3. Synchronize sessionStorage active checkout address if address changed
+  if (sanitizedFields.address !== undefined && typeof sessionStorage !== 'undefined') {
+    try {
+      const uidStr = String(updatedUser.id || updatedUser.uid || updatedUser.firebaseUid || '').trim();
+      const emailStr = String(updatedUser.email || '').trim().toLowerCase();
+      if (sanitizedFields.address) {
+        const hasValidCoords = Boolean(
+          updatedUser.coordinates &&
+          typeof updatedUser.coordinates.lat === 'number' &&
+          typeof updatedUser.coordinates.lng === 'number'
+        );
+        sessionStorage.setItem('riceflow-active-checkout-address', JSON.stringify({
+          userId: uidStr,
+          userEmail: emailStr,
+          address: sanitizedFields.address,
+          coordinates: hasValidCoords ? updatedUser.coordinates : null,
+          addressDetails: updatedUser.addressDetails || null,
+          isConfirmed: hasValidCoords,
+          savedAt: Date.now()
+        }));
+      } else {
+        sessionStorage.removeItem('riceflow-active-checkout-address');
+      }
+    } catch (_) {}
+  }
+
+  // 4. Update aurora-users cache
   try {
     const users = JSON.parse(localStorage.getItem('aurora-users') || '[]');
     const userEmail = String(user.email || '').trim().toLowerCase();
@@ -2954,7 +3065,7 @@ export async function updateUser(updatedFields) {
     console.warn('[USER] Error updating aurora-users in updateUser:', e);
   }
 
-  // 4. Update corresponding customer in aurora-customers cache
+  // 5. Update corresponding customer in aurora-customers cache
   try {
     let rawCustomers = JSON.parse(localStorage.getItem('aurora-customers') || '[]');
     const uidStr = String(user.id || user.uid || user.firebaseUid || '');
@@ -2971,17 +3082,21 @@ export async function updateUser(updatedFields) {
 
       if (isMatch) {
         const newName = sanitizedFields.fullName || sanitizedFields.name || c.name;
+        const nextAddress = sanitizedFields.address !== undefined ? sanitizedFields.address : (sanitizedFields.shippingAddress !== undefined ? sanitizedFields.shippingAddress : (c.address || c.shippingAddress));
         return {
           ...c,
+          uid: c.uid || resolvedFirebaseUid || c.id,
+          firebaseUid: c.firebaseUid || resolvedFirebaseUid || null,
           name: newName,
           fullName: newName,
           phone: sanitizedFields.phone !== undefined ? sanitizedFields.phone : c.phone,
           phoneE164: sanitizedFields.phoneE164 !== undefined ? sanitizedFields.phoneE164 : c.phoneE164,
           phoneVerified: sanitizedFields.phoneVerified !== undefined ? sanitizedFields.phoneVerified : c.phoneVerified,
           gender: sanitizedFields.gender || c.gender,
-          shippingAddress: sanitizedFields.address !== undefined ? sanitizedFields.address : (sanitizedFields.shippingAddress !== undefined ? sanitizedFields.shippingAddress : c.shippingAddress),
-          address: sanitizedFields.address !== undefined ? sanitizedFields.address : (sanitizedFields.shippingAddress !== undefined ? sanitizedFields.shippingAddress : (c.address || c.shippingAddress)),
+          shippingAddress: nextAddress,
+          address: nextAddress,
           coordinates: sanitizedFields.coordinates !== undefined ? sanitizedFields.coordinates : (c.coordinates || null),
+          addressDetails: sanitizedFields.addressDetails !== undefined ? sanitizedFields.addressDetails : (c.addressDetails || null),
           profilePicture: sanitizedFields.profilePicture !== undefined ? sanitizedFields.profilePicture : c.profilePicture,
           updatedAt
         };
@@ -3015,7 +3130,10 @@ export function updateUserFromCustomer(client) {
       email: client.email || users[userIdx].email,
       phone: client.phone !== undefined ? client.phone : users[userIdx].phone,
       gender: client.gender || users[userIdx].gender,
-      address: client.shippingAddress || users[userIdx].address,
+      address: client.shippingAddress || client.address || users[userIdx].address,
+      shippingAddress: client.shippingAddress || client.address || users[userIdx].shippingAddress,
+      coordinates: client.coordinates !== undefined ? client.coordinates : users[userIdx].coordinates,
+      addressDetails: client.addressDetails !== undefined ? client.addressDetails : users[userIdx].addressDetails,
       isArchived: client.isArchived ?? false,
       isActive: client.isActive !== false,
       status: client.status || (client.isArchived ? 'Archived' : (client.isActive === false ? 'Suspended' : 'Active')),
@@ -3177,6 +3295,8 @@ export function syncUsersAndCustomers() {
     const finalPhoneVerified = (u && u.phoneVerified !== undefined) ? u.phoneVerified : (c.phoneVerified ?? false);
     const finalGender = (u && u.gender) ? u.gender : (c.gender || 'Female');
     const finalAddress = (u && (u.address || u.shippingAddress)) ? (u.address || u.shippingAddress) : (c.shippingAddress || c.address || '');
+    const finalCoordinates = (u && u.coordinates) ? u.coordinates : (c.coordinates || null);
+    const finalAddressDetails = (u && u.addressDetails) ? u.addressDetails : (c.addressDetails || null);
 
     const userOrders = orders.filter(o => {
       const oUserId = String(o.userId || o.uid || '');
@@ -3222,6 +3342,7 @@ export function syncUsersAndCustomers() {
       ...c,
       customerId: finalCid,
       uid: c.uid || (u ? u.uid || u.firebaseUid : null) || c.id,
+      firebaseUid: c.firebaseUid || (u ? u.firebaseUid || u.uid : null) || null,
       name: finalName,
       fullName: finalName,
       email: cEmail || (u ? String(u.email || '').trim().toLowerCase() : ''),
@@ -3231,6 +3352,8 @@ export function syncUsersAndCustomers() {
       gender: finalGender,
       shippingAddress: finalAddress,
       address: finalAddress,
+      coordinates: finalCoordinates,
+      addressDetails: finalAddressDetails,
       profilePicture: (u && u.profilePicture) ? u.profilePicture : (c.profilePicture || null),
       totalSpent: userOrders.length > 0 ? totalSpent : 0,
       status: accountStatus,
@@ -3301,6 +3424,7 @@ export function syncUsersAndCustomers() {
         id: uid || nextCustomerId,
         customerId: nextCustomerId,
         uid: u.firebaseUid || uid,
+        firebaseUid: u.firebaseUid || null,
         name: uName,
         fullName: uName,
         email: uEmail,
@@ -3310,6 +3434,8 @@ export function syncUsersAndCustomers() {
         gender: u.gender || 'Female',
         shippingAddress: u.address || '',
         address: u.address || '',
+        coordinates: u.coordinates || null,
+        addressDetails: u.addressDetails || null,
         profilePicture: u.profilePicture || null,
         totalSpent: totalSpent,
         status: accountStatus,
@@ -4608,10 +4734,16 @@ export function getOrders() {
     let amountPaid = o.amountPaid !== undefined && o.amountPaid !== null && !isNaN(Number(o.amountPaid)) ? Number(o.amountPaid) : undefined;
     let remainingAmount = o.remainingAmount !== undefined && o.remainingAmount !== null && !isNaN(Number(o.remainingAmount)) ? Number(o.remainingAmount) : (o.remainingBalance !== undefined ? Number(o.remainingBalance) : undefined);
 
+    const isOfflineOrder = o.orderSource === 'offline_admin';
     const isReservation = Boolean(o.isPreOrder || (o.items && o.items.some(i => i.isReservation)));
     const isFullPayment = o.paymentType === 'full' || o.paymentType === 'full_advance' || o.paymentOption === 'Full Payment' || o.paymentOption === 'full' || o.paymentType === 'Full Payment';
 
-    if (isReservation) {
+    if (isOfflineOrder) {
+      amountPaid = amountPaid !== undefined ? Math.max(0, Math.min(total, amountPaid)) : 0;
+      remainingAmount = remainingAmount !== undefined
+        ? Math.max(0, Math.min(total, remainingAmount))
+        : Math.max(0, Math.round((total - amountPaid) * 100) / 100);
+    } else if (isReservation) {
       if (isFullPayment) {
         amountPaid = total;
         remainingAmount = 0;
@@ -4657,8 +4789,8 @@ export function getOrders() {
       }
     }
 
-    // Force completed state to be fully paid
-    if (o.status === 'completed') {
+    // Force completed state to be fully paid for online orders only; offline/walk-in order status stays independent of payment
+    if (!isOfflineOrder && o.status === 'completed') {
       remainingAmount = 0;
       amountPaid = total;
     }
@@ -4679,6 +4811,15 @@ export function getOrders() {
     if (isReplacementOrder) {
       financialStatus = 'No Cash Collection Required';
       amountCollected = 0;
+    } else if (isOfflineOrder) {
+      if (!financialStatus) {
+        financialStatus = (remainingAmount <= 0 && o.paymentVerified === true)
+          ? 'Verified'
+          : (o.offlinePaymentState === 'unpaid' ? 'Pending Cash Collection' : 'Pending Turnover');
+      }
+      if (amountCollected === undefined) {
+        amountCollected = remainingAmount;
+      }
     } else if (financialStatus === 'No Cash Collection Required' && !isGenuineCashlessFull) {
       // Do not preserve a cash-audit exemption on an ordinary cash/collect-on-delivery order.
       financialStatus = (o.financialVerification === true || o.cashAuditStatus === 'Audited')
@@ -4691,8 +4832,8 @@ export function getOrders() {
       }
     }
 
-    if (isReplacementOrder) {
-      // Replacement deliveries do not require cash collection.
+    if (isReplacementOrder || isOfflineOrder) {
+      // Replacement deliveries do not require cash collection; offline/walk-in orders manage payment fields explicitly.
     } else if (o.status === 'delivered' || o.status === 'completed') {
       if (!financialStatus) {
         if (isGenuineCashlessFull) {
@@ -4722,9 +4863,13 @@ export function getOrders() {
     if (financialStatus === 'No Cash Collection Required') {
       amountCollected = 0;
     } else if (amountCollected === undefined) {
-      const isDown = o.paymentType === 'deposit' || o.paymentType === 'downpayment' || o.paymentType === 'down' || o.isPreOrder;
-      const depositPaid = isDown ? Math.floor(total * 0.3) : (o.paymentMethod === 'gcash' ? total : 0);
-      amountCollected = Math.max(0, total - depositPaid);
+      if (isOfflineOrder) {
+        amountCollected = remainingAmount;
+      } else {
+        const isDown = o.paymentType === 'deposit' || o.paymentType === 'downpayment' || o.paymentType === 'down' || o.isPreOrder;
+        const depositPaid = isDown ? Math.floor(total * 0.3) : (o.paymentMethod === 'gcash' ? total : 0);
+        amountCollected = Math.max(0, total - depositPaid);
+      }
     }
 
     // Order completion workflow state fields
@@ -4859,6 +5004,13 @@ export function getCashToAudit(order) {
   }
 
   const totalBill = Number(order.total || (order.items || []).reduce((acc, item) => acc + ((item.product?.price || 0) * (item.quantity || 0)), 0) + (order.deliveryOption === 'delivery' ? 80 : 0));
+
+  if (order.orderSource === 'offline_admin') {
+    const paid = Math.max(0, Number(order.amountPaid || 0));
+    return order.remainingAmount !== undefined && order.remainingAmount !== null
+      ? Math.max(0, Number(order.remainingAmount))
+      : Math.max(0, totalBill - paid);
+  }
 
   if (order.paymentMethod === 'gcash' && (order.paymentType === 'full' || order.paymentType === 'full_advance')) {
     return 0;
@@ -5752,8 +5904,10 @@ export async function addOrderAtomic(orderData) {
         continue;
       }
 
-      // Read authoritative physical warehouse stock from Firestore (canonical schema field is stock)
-      const physicalStock = Math.max(0, Number(pData.stock !== undefined ? pData.stock : (pData.currentStock !== undefined ? pData.currentStock : 0)));
+      // Read authoritative physical warehouse stock from Firestore (accounting for earlier items in the same order)
+      const physicalStock = productUpdates[pId]
+        ? productUpdates[pId].stock
+        : Math.max(0, Number(pData.stock !== undefined ? pData.stock : (pData.currentStock !== undefined ? pData.currentStock : 0)));
       const committedAllocated = allocatedMap[pId] || 0;
       const availStock = Math.max(0, physicalStock - committedAllocated);
       const requestedQty = Number(item.quantity || 0);
@@ -5810,7 +5964,7 @@ export async function addOrderAtomic(orderData) {
         });
       } else {
         // requestedQty > availStock
-        if (orderData.customerChoice === 'buy_available_only') {
+        if (!orderData.strictStockCheck && orderData.customerChoice === 'buy_available_only') {
           // Customer explicitly chose to purchase available quantity only without reserving remainder
           if (availStock > 0) {
             anyPhysicalStockDeducted = true;
@@ -6655,7 +6809,9 @@ export function updateOrderStatus(orderId, status, note = '', extraFields = {}) 
         }
       }
 
-      if (currentStatus === 'to-ship' || currentStatus === 'processing' || currentStatus === 'to-receive') {
+      const isOfflineOrder = order.orderSource === 'offline_admin';
+
+      if (!isOfflineOrder && (currentStatus === 'to-ship' || currentStatus === 'processing' || currentStatus === 'to-receive')) {
         paymentVerified = true;
         if (!amountPaid || amountPaid === 0) {
           if (order.paymentType === 'deposit' || order.paymentType === 'downpayment' || order.paymentType === 'down' || order.paymentMethod === 'cash') {
@@ -6669,30 +6825,39 @@ export function updateOrderStatus(orderId, status, note = '', extraFields = {}) 
       }
 
       if (currentStatus === 'completed' || currentStatus === 'delivered') {
-        const isFullAdvance = order.paymentType === 'full' || order.paymentType === 'full_advance' || order.paymentOption === 'Full Payment' || order.paymentOption === 'full';
-        if (currentStatus === 'completed' || isFullAdvance) {
-          remainingAmount = 0;
-          amountPaid = order.total;
-        }
-        paymentVerified = true;
+        if (!isOfflineOrder) {
+          const isFullAdvance = order.paymentType === 'full' || order.paymentType === 'full_advance' || order.paymentOption === 'Full Payment' || order.paymentOption === 'full';
+          if (currentStatus === 'completed' || isFullAdvance) {
+            remainingAmount = 0;
+            amountPaid = order.total;
+          }
+          paymentVerified = true;
 
-        if (currentStatus === 'delivered') {
-          if (order.isReplacement || order.replacementDelivery) {
-            order.financialStatus = 'No Cash Collection Required';
-            order.amountCollected = 0;
-          } else if ((String(order.paymentMethod || '').toLowerCase() === 'gcash' || String(order.paymentMethod || '').toLowerCase() === 'g-cash') &&
-                     (order.paymentType === 'full' || order.paymentType === 'full_advance' || order.paymentOption === 'Full Payment' || order.paymentOption === 'full') &&
-                     !isReservationOrder(order) &&
-                     order.paymentType !== 'deposit' && order.paymentType !== 'downpayment' && order.paymentType !== 'down') {
-            order.financialStatus = 'No Cash Collection Required';
-            order.amountCollected = 0;
-          } else {
-            if (!order.financialStatus || order.financialStatus === 'Pending Turnover') {
-              order.financialStatus = 'Pending Turnover';
-              const isDown = order.paymentType === 'deposit' || order.paymentType === 'downpayment' || order.paymentType === 'down' || order.isPreOrder;
-              const depositPaid = isDown ? Math.floor(order.total * 0.3) : (order.paymentMethod === 'gcash' ? order.total : 0);
-              order.amountCollected = Math.max(0, order.total - depositPaid);
+          if (currentStatus === 'delivered') {
+            if (order.isReplacement || order.replacementDelivery) {
+              order.financialStatus = 'No Cash Collection Required';
+              order.amountCollected = 0;
+            } else if ((String(order.paymentMethod || '').toLowerCase() === 'gcash' || String(order.paymentMethod || '').toLowerCase() === 'g-cash') &&
+                       (order.paymentType === 'full' || order.paymentType === 'full_advance' || order.paymentOption === 'Full Payment' || order.paymentOption === 'full') &&
+                       !isReservationOrder(order) &&
+                       order.paymentType !== 'deposit' && order.paymentType !== 'downpayment' && order.paymentType !== 'down') {
+              order.financialStatus = 'No Cash Collection Required';
+              order.amountCollected = 0;
+            } else {
+              if (!order.financialStatus || order.financialStatus === 'Pending Turnover') {
+                order.financialStatus = 'Pending Turnover';
+                const isDown = order.paymentType === 'deposit' || order.paymentType === 'downpayment' || order.paymentType === 'down' || order.isPreOrder;
+                const depositPaid = isDown ? Math.floor(order.total * 0.3) : (order.paymentMethod === 'gcash' ? order.total : 0);
+                order.amountCollected = Math.max(0, order.total - depositPaid);
+              }
             }
+            order.collectedBy = changerName;
+            order.collectedDate = now.toLocaleDateString();
+            order.collectedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+          }
+        } else if (currentStatus === 'delivered') {
+          if (order.amountCollected === undefined) {
+            order.amountCollected = Math.max(0, Number(remainingAmount ?? (order.total - Number(amountPaid || 0))));
           }
           order.collectedBy = changerName;
           order.collectedDate = now.toLocaleDateString();
@@ -9027,9 +9192,12 @@ export function saveFormDraft(formId, draftKey, customState = null) {
       }
     });
 
+    const curUser = getCurrentUser();
     const payload = {
       formId,
       draftKey: draftKey || formId,
+      userId: curUser ? String(curUser.id || curUser.firebaseUid || curUser.uid || '').trim() : '',
+      userEmail: curUser && curUser.email ? String(curUser.email).trim().toLowerCase() : '',
       savedAt: Date.now(),
       fields: data,
       customState: customState || null
@@ -9051,13 +9219,35 @@ export function restoreFormDraft(formId, draftKey, options = {}) {
     const payload = JSON.parse(raw);
     if (!payload || !payload.fields) return null;
 
+    // Enforce account isolation: never restore a draft from a different user
+    const curUser = getCurrentUser();
+    const curUid = curUser ? String(curUser.id || curUser.firebaseUid || curUser.uid || '').trim() : '';
+    const curEmail = curUser && curUser.email ? String(curUser.email).trim().toLowerCase() : '';
+    if (curUser) {
+      if (payload.userEmail && curEmail && String(payload.userEmail).toLowerCase() !== curEmail) {
+        localStorage.removeItem(`riceflow_draft_${draftKey || formId}`);
+        return null;
+      }
+      if (payload.userId && curUid && String(payload.userId) !== curUid && String(payload.userId) !== String(curUser.firebaseUid || '')) {
+        localStorage.removeItem(`riceflow_draft_${draftKey || formId}`);
+        return null;
+      }
+      if (!payload.userId && !payload.userEmail) {
+        // Legacy unscoped draft: discard so it cannot leak across accounts
+        localStorage.removeItem(`riceflow_draft_${draftKey || formId}`);
+        return null;
+      }
+    }
+
     const formEl = document.getElementById(formId);
     if (!formEl) return payload;
 
     let restoredCount = 0;
     const fields = payload.fields;
+    const skipFields = Array.isArray(options.skipFields) ? options.skipFields : [];
 
     Object.keys(fields).forEach(key => {
+      if (skipFields.includes(key)) return;
       const val = fields[key];
       // Check for radio buttons by name
       const radios = formEl.querySelectorAll(`input[type="radio"][name="${key}"]`);
@@ -9076,6 +9266,9 @@ export function restoreFormDraft(formId, draftKey, options = {}) {
       const el = formEl.querySelector(`#${CSS.escape(key)}`) || formEl.querySelector(`[name="${CSS.escape(key)}"]`);
       if (el) {
         if (el.type === 'password') return; // never restore passwords
+        if (options.preserveAddressIfPopulated && (el.id === 'inp-address' || el.name === 'address') && String(el.value || '').trim() !== '') {
+          return;
+        }
         if (el.type === 'checkbox') {
           el.checked = Boolean(val);
           el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -9141,7 +9334,7 @@ function showDraftRestoredNotice(formEl, draftKey) {
   formEl.prepend(notice);
 }
 
-export function autoBindDraftPreservation(formId, draftKey, getCustomState = null, onRestored = null) {
+export function autoBindDraftPreservation(formId, draftKey, getCustomState = null, onRestored = null, options = {}) {
   if (typeof document === 'undefined') return () => {};
   
   const setup = () => {
@@ -9149,7 +9342,7 @@ export function autoBindDraftPreservation(formId, draftKey, getCustomState = nul
     if (!formEl) return;
 
     // Restore draft if exists
-    const restored = restoreFormDraft(formId, draftKey);
+    const restored = restoreFormDraft(formId, draftKey, options);
     if (restored && onRestored && typeof onRestored === 'function') {
       try { onRestored(restored.customState, restored.fields); } catch (e) { console.warn('[DRAFT] onRestored error:', e); }
     }
@@ -9299,9 +9492,11 @@ export function openCustomerLogoutModal() {
   if (!dialog) {
     dialog = document.createElement('div');
     dialog.id = 'customer-logout-confirm-dialog';
-    dialog.className = 'fixed inset-0 bg-black/50 backdrop-blur-xs z-[100] flex items-center justify-center p-4 hidden animate-in fade-in duration-200';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.className = 'fixed inset-0 bg-black/50 backdrop-blur-xs z-[100] flex items-center justify-center p-3 sm:p-4 hidden animate-in fade-in duration-200 overflow-hidden';
     dialog.innerHTML = `
-      <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full shadow-2xl p-6 border border-gray-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-center">
+      <div class="bg-white dark:bg-slate-900 rounded-3xl w-[min(calc(100vw-24px),26rem)] max-h-[calc(100dvh-24px)] overflow-y-auto shadow-2xl p-5 sm:p-6 border border-gray-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-center mx-auto">
         <div class="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center border border-rose-100 dark:border-rose-800/50 mx-auto mb-4">
           <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -9311,9 +9506,9 @@ export function openCustomerLogoutModal() {
         </div>
         <h3 class="text-base font-black text-gray-900 dark:text-gray-100 mb-2">Do you want to log out?</h3>
         <p class="text-xs text-gray-600 dark:text-gray-300 font-semibold leading-relaxed mb-6">You will need to sign in again to access your account and orders.</p>
-        <div class="flex gap-2.5 justify-center">
-          <button id="cancel-customer-logout-btn" type="button" class="px-5 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 hover:border-gray-300 dark:hover:bg-slate-700 dark:hover:border-slate-500 cursor-pointer transition-all duration-200 bg-white dark:bg-slate-800 flex-1">Cancel</button>
-          <button id="confirm-customer-logout-btn" type="button" class="px-5 py-2.5 bg-[#EF4444] hover:bg-[#DC2626] border border-transparent hover:border-red-700 dark:hover:border-red-400 text-white rounded-xl text-xs font-bold cursor-pointer transition-all duration-200 flex-1">Confirm Logout</button>
+        <div class="flex flex-col-reverse sm:flex-row gap-2.5 justify-center">
+          <button id="cancel-customer-logout-btn" type="button" class="px-4 sm:px-5 py-2.5 min-h-[44px] border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 hover:border-gray-300 dark:hover:bg-slate-700 dark:hover:border-slate-500 cursor-pointer transition-all duration-200 bg-white dark:bg-slate-800 flex-1 flex items-center justify-center whitespace-nowrap">Cancel</button>
+          <button id="confirm-customer-logout-btn" type="button" class="px-4 sm:px-5 py-2.5 min-h-[44px] bg-[#EF4444] hover:bg-[#DC2626] border border-transparent hover:border-red-700 dark:hover:border-red-400 text-white rounded-xl text-xs font-bold cursor-pointer transition-all duration-200 flex-1 flex items-center justify-center whitespace-nowrap">Confirm Logout</button>
         </div>
       </div>
     `;
@@ -10729,25 +10924,16 @@ if (typeof window !== 'undefined') {
     if (e.key && e.key.startsWith('aurora-')) {
       window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: e.key } }));
     }
-    if (!e.key || e.key.startsWith('settings-gcash') || e.key === 'aurora-store-settings') {
-      applyGcashSettings();
+    if (!e.key || e.key.startsWith('settings-gcash') || e.key.startsWith('settings-store-') || e.key === 'aurora-store-settings') {
+      applyStoreBranding();
     }
   });
   window.addEventListener('aurora-sync-event', (e) => {
-    if (!e.detail || !e.detail.key || e.detail.key.startsWith('settings-gcash') || e.detail.key === 'aurora-store-settings' || e.detail.key === 'settings-store-logo') {
-      applyGcashSettings();
+    if (!e.detail || !e.detail.key || e.detail.key.startsWith('settings-gcash') || e.detail.key.startsWith('settings-store-') || e.detail.key === 'aurora-store-settings') {
+      applyStoreBranding();
       const s = getStoreSettings();
-      if (s.logo) {
-        const navLogo = document.getElementById('navbar-store-logo');
-        if (navLogo) {
-          if (navLogo.src !== s.logo) navLogo.src = s.logo;
-        } else if (typeof document !== 'undefined' && document.getElementById('navbar-container')) {
-          try { renderLayout(); } catch (_) {}
-        }
-        const footLogo = document.getElementById('footer-store-logo');
-        if (footLogo && footLogo.src !== s.logo) {
-          footLogo.src = s.logo;
-        }
+      if (!document.getElementById('navbar-store-logo') && typeof document !== 'undefined' && document.getElementById('navbar-container')) {
+        try { renderLayout(); } catch (_) {}
       }
     }
     if (e.detail && (e.detail.key === 'aurora-user' || e.detail.key === 'aurora-logged-in')) {
@@ -11161,18 +11347,19 @@ export function getOrderDeliveryFee(order) {
 export function getStoreSettings() {
   if (typeof window === 'undefined') {
     return {
-      storeName: 'Aurora Local Rice',
+      storeName: 'Mahayag Local Rice',
       tagline: 'Fresh Quality Rice Delivered to Your Doorstep',
-      description: 'Aurora Local Rice provides high-quality rice products for households, retailers, and bulk buyers across Aurora, Zamboanga del Sur.',
+      description: 'Mahayag Local Rice provides high-quality rice products for households, retailers, and bulk buyers across Aurora, Zamboanga del Sur.',
       contactNumber: '+63 912 345 6789',
       contactEmail: 'info@auroralocalrice.com',
+      supportEmail: 'support@auroralocalrice.com',
       storeAddress: 'Aurora, Zamboanga del Sur, Philippines',
       facebookLink: 'https://facebook.com/auroralocalrice',
       businessHours: '8:00 AM - 5:00 PM',
       operatingDays: 'Monday - Saturday',
       logo: './rice_logo.jpg',
       banner: 'https://static.vecteezy.com/system/resources/thumbnails/047/128/443/small/a-bag-of-rice-is-sitting-on-a-wooden-table-with-a-bunch-of-rice-on-the-table-photo.jpg',
-      gcashName: 'Aurora Rice Store',
+      gcashName: 'Mahayag Local Rice',
       gcashNumber: '09123456789',
       gcashQr: '',
       deliveryMinimumSettings: DEFAULT_DELIVERY_MINIMUM_SETTINGS,
@@ -11264,20 +11451,24 @@ export function getStoreSettings() {
     return fallback;
   };
 
+  const hasCloudContactEmail = Boolean(cloudSettings && cloudSettings.contactEmail && String(cloudSettings.contactEmail).trim() !== '');
+  const supportEmailFallback = hasCloudContactEmail ? '' : 'support@auroralocalrice.com';
+
   return {
     id: cloudSettings.id || 'main',
-    storeName: localStorage.getItem('settings-store-name') || cloudSettings.storeName || 'Aurora Local Rice',
+    storeName: localStorage.getItem('settings-store-name') || cloudSettings.storeName || 'Mahayag Local Rice',
     tagline: localStorage.getItem('settings-store-tagline') || cloudSettings.tagline || 'Fresh Quality Rice Delivered to Your Doorstep',
-    description: localStorage.getItem('settings-store-description') || cloudSettings.description || 'Aurora Local Rice provides high-quality rice products for households, retailers, and bulk buyers across Aurora, Zamboanga del Sur.',
+    description: localStorage.getItem('settings-store-description') || cloudSettings.description || 'Mahayag Local Rice provides high-quality rice products for households, retailers, and bulk buyers across Aurora, Zamboanga del Sur.',
     contactNumber: localStorage.getItem('settings-contact-number') || cloudSettings.contactNumber || '+63 912 345 6789',
-    contactEmail: pickStoredSetting('settings-contact-email', cloudSettings.contactEmail, 'info@auroralocalrice.com'),
+    contactEmail: localStorage.getItem('settings-contact-email') || cloudSettings.contactEmail || 'info@auroralocalrice.com',
+    supportEmail: pickStoredSetting('settings-support-email', cloudSettings.supportEmail, supportEmailFallback),
     storeAddress: localStorage.getItem('settings-store-address') || cloudSettings.storeAddress || 'Aurora, Zamboanga del Sur, Philippines',
     facebookLink: pickStoredSetting('settings-facebook-link', cloudSettings.facebookLink, ''),
     businessHours: pickStoredSetting('settings-business-hours', cloudSettings.businessHours, '8:00 AM - 5:00 PM'),
     operatingDays: pickStoredSetting('settings-operating-days', cloudSettings.operatingDays, 'Monday - Saturday'),
     logo: localStorage.getItem('settings-store-logo') || cloudSettings.logo || (p + 'rice_logo.jpg'),
     banner: localStorage.getItem('settings-store-banner') || cloudSettings.banner || 'https://static.vecteezy.com/system/resources/thumbnails/047/128/443/small/a-bag-of-rice-is-sitting-on-a-wooden-table-with-a-bunch-of-rice-on-the-table-photo.jpg',
-    gcashName: localStorage.getItem('settings-gcash-name') || cloudSettings.gcashName || 'Aurora Rice Store',
+    gcashName: localStorage.getItem('settings-gcash-name') || cloudSettings.gcashName || 'Mahayag Local Rice',
     gcashNumber: localStorage.getItem('settings-gcash-number') || cloudSettings.gcashNumber || '09123456789',
     gcashQr: pickStoredSetting('settings-gcash-qr', cloudSettings.gcashQr, ''),
     deliveryMinimumSettings,
@@ -11285,40 +11476,106 @@ export function getStoreSettings() {
   };
 }
 
-export function applyGcashSettings() {
+export function applyStoreBranding(overrideSettings) {
   if (typeof document === 'undefined') return;
-  const s = getStoreSettings();
-  
+  const s = overrideSettings || getStoreSettings();
+  const brandName = (s.storeName && String(s.storeName).trim()) || 'Mahayag Local Rice';
+
   // Update GCash Account Name references
   const gcashAcc = document.getElementById('gcash-account-name');
-  if (gcashAcc && s.gcashName) {
+  if (gcashAcc && s.gcashName && gcashAcc.textContent !== s.gcashName) {
     gcashAcc.textContent = s.gcashName;
   }
-  
+
   // Update GCash Number references
   const gcashNum = document.getElementById('gcash-number-lbl');
-  if (gcashNum && s.gcashNumber) {
+  if (gcashNum && s.gcashNumber && gcashNum.textContent !== s.gcashNumber) {
     gcashNum.textContent = s.gcashNumber;
   }
-  
+
   // Update GCash QR Code image references
   const gcashQr = document.getElementById('gcash-qr-img');
   if (gcashQr) {
     const fallbackQrSvg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'><rect width='100%' height='100%' fill='%23f9fafb' rx='12'/><rect x='8' y='8' width='134' height='134' fill='none' stroke='%23e5e7eb' stroke-width='2' stroke-dasharray='6,4' rx='8'/><text x='50%' y='45%' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='10' font-weight='bold' fill='%239ca3af'>No GCash QR</text><text x='50%' y='60%' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='10' font-weight='bold' fill='%239ca3af'>Code Available</text></svg>`;
+    let nextQrSrc = fallbackQrSvg;
     if (s.gcashQr && s.gcashQr.trim() !== '') {
-      gcashQr.src = s.gcashQr;
+      nextQrSrc = s.gcashQr;
     } else if (s.gcashNumber && s.gcashNumber.trim() !== '') {
       const cleanNum = s.gcashNumber.replace(/\s+/g, '');
-      gcashQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanNum)}`;
-    } else {
-      gcashQr.src = fallbackQrSvg;
+      nextQrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cleanNum)}`;
+    }
+    if (gcashQr.src !== nextQrSrc) {
+      gcashQr.src = nextQrSrc;
     }
   }
 
-  // Dynamic document title update
-  if (typeof document !== 'undefined' && document.title && document.title.includes('Aurora Local Rice') && s.storeName) {
-    document.title = document.title.replace('Aurora Local Rice', s.storeName);
+  // Update shared header/footer logos cleanly without full DOM rebuild
+  if (s.logo) {
+    const navLogo = document.getElementById('navbar-store-logo');
+    if (navLogo) {
+      if (navLogo.getAttribute('src') !== s.logo && navLogo.src !== s.logo) navLogo.src = s.logo;
+      const expectedAlt = `${brandName} Logo`;
+      if (navLogo.alt !== expectedAlt) navLogo.alt = expectedAlt;
+    }
+    const footLogo = document.getElementById('footer-store-logo');
+    if (footLogo) {
+      if (footLogo.getAttribute('src') !== s.logo && footLogo.src !== s.logo) footLogo.src = s.logo;
+      const expectedAlt = `${brandName} Logo`;
+      if (footLogo.alt !== expectedAlt) footLogo.alt = expectedAlt;
+    }
   }
+
+  // Update footer branding text in place
+  const footerNameEl = document.getElementById('footer-store-name');
+  if (footerNameEl && footerNameEl.textContent !== brandName) {
+    footerNameEl.textContent = brandName;
+  }
+  const footerDescEl = document.getElementById('footer-store-desc');
+  if (footerDescEl && s.description && footerDescEl.textContent !== s.description) {
+    footerDescEl.textContent = s.description;
+  }
+  const footerCopyEl = document.getElementById('footer-store-copyright');
+  const nextCopy = `© 2026 ${brandName}. All rights reserved.`;
+  if (footerCopyEl && footerCopyEl.textContent !== nextCopy) {
+    footerCopyEl.textContent = nextCopy;
+  }
+
+  // Update admin sidebar & mobile portal branding in place
+  const adminBrandText = `${brandName} Admin`;
+  const adminMobileName = document.getElementById('admin-mobile-store-name');
+  if (adminMobileName && adminMobileName.textContent !== adminBrandText) {
+    adminMobileName.textContent = adminBrandText;
+  }
+  const adminSidebarName = document.getElementById('admin-sidebar-store-name');
+  if (adminSidebarName && adminSidebarName.textContent !== adminBrandText) {
+    adminSidebarName.textContent = adminBrandText;
+  }
+
+  // Update any declarative [data-store-name] spans on static pages (hero, legal, scanner modals, etc.)
+  document.querySelectorAll('[data-store-name]').forEach((el) => {
+    if (el.textContent !== brandName) {
+      el.textContent = brandName;
+    }
+  });
+
+  // Dynamic document title synchronization
+  if (document.title) {
+    let nextTitle = document.title;
+    if (nextTitle.includes('Aurora Local Rice')) {
+      nextTitle = nextTitle.replace('Aurora Local Rice', brandName);
+    } else if (nextTitle.includes('Aurora Rice Admin')) {
+      nextTitle = nextTitle.replace('Aurora Rice Admin', `${brandName} Admin`);
+    } else if (nextTitle.includes('Mahayag Local Rice Admin') && brandName !== 'Mahayag Local Rice') {
+      nextTitle = nextTitle.replace('Mahayag Local Rice Admin', `${brandName} Admin`);
+    }
+    if (nextTitle !== document.title) {
+      document.title = nextTitle;
+    }
+  }
+}
+
+export function applyGcashSettings() {
+  applyStoreBranding();
 }
 
 // ---------------------- NAVIGATION & LAYOUT RENDERER ----------------------
@@ -11451,28 +11708,30 @@ export function renderLayout() {
     const isContactPage = window.location.pathname.includes('contact.html');
     const isReviewsPage = window.location.pathname.includes('reviews.html');
 
-    headerContainer.className = "bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors";
+    const isHeaderFirstMount = !headerContainer.dataset.chromeMounted;
+    headerContainer.className = "bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors" + (isHeaderFirstMount ? " riceflow-chrome-enter" : "");
+    headerContainer.dataset.chromeMounted = "true";
     headerContainer.innerHTML = `
-      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-3">
         <!-- Logo and brand -->
-        <a href="${p}index.html" class="flex items-center group decoration-none">
+        <a href="${p}index.html" class="flex items-center group decoration-none shrink-0">
           <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-md group-hover:scale-105 transition-transform border border-gray-150 shrink-0">
             <img id="navbar-store-logo" src="${settings.logo}" alt="${settings.storeName} Logo" class="w-full h-full object-cover" />
           </div>
         </a>
 
         <!-- Desktop Navigation Items -->
-        <nav class="hidden md:flex items-center gap-8 font-semibold text-[#111827] dark:text-white">
-          <a href="${p}index.html" class="hover:text-[#1E6C02] transition-colors ${window.location.pathname.endsWith('index.html') || window.location.pathname === '/' ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Home</a>
-          <a href="${p}products.html" class="hover:text-[#1E6C02] transition-colors ${isProductsPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Rice Products</a>
-          <a href="${p}reviews.html" class="hover:text-[#1E6C02] transition-colors ${isReviewsPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Reviews</a>
-          <a href="${p}contact.html" class="hover:text-[#1E6C02] transition-colors ${isContactPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Contact Us</a>
+        <nav class="hidden lg:flex items-center lg:gap-5 xl:gap-8 font-semibold text-[#111827] dark:text-white shrink-0">
+          <a href="${p}index.html" class="whitespace-nowrap shrink-0 hover:text-[#1E6C02] transition-colors ${window.location.pathname.endsWith('index.html') || window.location.pathname === '/' ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Home</a>
+          <a href="${p}products.html" class="whitespace-nowrap shrink-0 hover:text-[#1E6C02] transition-colors ${isProductsPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Rice Products</a>
+          <a href="${p}reviews.html" class="whitespace-nowrap shrink-0 hover:text-[#1E6C02] transition-colors ${isReviewsPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Reviews</a>
+          <a href="${p}contact.html" class="whitespace-nowrap shrink-0 hover:text-[#1E6C02] transition-colors ${isContactPage ? 'text-[#1E6C02] border-b-2 border-[#1E6C02] pb-1' : ''}">Contact Us</a>
         </nav>
 
         <!-- Search Bar and Action Controls -->
-        <div class="flex items-center gap-2 sm:gap-3 lg:gap-4">
+        <div class="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
           <!-- Desktop Search -->
-          <div class="relative hidden sm:block w-64">
+          <div class="relative hidden sm:block sm:w-52 md:w-64 lg:w-48 xl:w-64 shrink-0">
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#111827] dark:text-white pointer-events-none">${ICONS.search}</span>
             <input 
               id="top-search-input"
@@ -11549,7 +11808,7 @@ export function renderLayout() {
 
           <!-- Profile / Logging -->
           ${user ? `
-            <a href="${p}profile.html" class="flex items-center justify-center p-1 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors" title="My Profile">
+            <a href="${p}profile.html" class="flex items-center justify-center p-1 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors shrink-0" title="My Profile">
               <div class="w-9 h-9 rounded-full overflow-hidden bg-[#1E6C02] text-white flex items-center justify-center font-bold text-sm select-none">
                 ${user.profilePicture ? `<img src="${user.profilePicture}" class="w-full h-full object-cover" alt="Profile" />` : (() => {
                   const rawName = (user.fullName || user.name || 'User').trim();
@@ -11559,13 +11818,13 @@ export function renderLayout() {
               </div>
             </a>
           ` : `
-            <a href="${p}login.html" class="bg-[#1E6C02] hover:bg-[#145001] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md shadow-green-900/10 cursor-pointer">
+            <a href="${p}login.html" class="bg-[#1E6C02] hover:bg-[#145001] text-white font-bold text-sm px-4 sm:px-5 py-2.5 rounded-xl transition-all shadow-md shadow-green-900/10 cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center justify-center">
               Login
             </a>
           `}
 
-          <!-- Mobile drawer toggle button -->
-          <button id="mobile-menu-toggle" class="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 text-[#111827] dark:text-white md:hidden transition-colors cursor-pointer">
+          <!-- Mobile & Tablet drawer toggle button -->
+          <button id="mobile-menu-toggle" class="p-2 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 text-[#111827] dark:text-white lg:hidden transition-colors cursor-pointer shrink-0">
             ${ICONS.menu}
           </button>
         </div>
@@ -11793,18 +12052,20 @@ export function renderLayout() {
 
   // 2. DYNAMIC FOOTER
   if (footerContainer) {
-    footerContainer.className = "bg-[#193317] text-[#E8F5E9] py-12 text-sm border-t border-[#142C12]";
+    const isFooterFirstMount = !footerContainer.dataset.chromeMounted;
+    footerContainer.className = "bg-[#193317] text-[#E8F5E9] py-12 text-sm border-t border-[#142C12]" + (isFooterFirstMount ? " riceflow-chrome-enter" : "");
+    footerContainer.dataset.chromeMounted = "true";
     footerContainer.innerHTML = `
-      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         <div>
           <div class="flex items-center gap-2 mb-4">
             <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shadow-sm shrink-0">
               <img id="footer-store-logo" src="${settings.logo}" alt="${settings.storeName} Logo" class="w-full h-full object-cover" />
             </div>
-            <span class="text-xl font-bold text-white">${settings.storeName}</span>
+            <span id="footer-store-name" class="text-xl font-bold text-white">${settings.storeName}</span>
           </div>
-          <p class="text-green-100/70 leading-relaxed mb-4 font-medium">${settings.description}</p>
-          <p class="text-xs text-green-100/40">© 2026 ${settings.storeName}. All rights reserved.</p>
+          <p id="footer-store-desc" class="text-green-100/70 leading-relaxed mb-4 font-medium">${settings.description}</p>
+          <p id="footer-store-copyright" class="text-xs text-green-100/40">© 2026 ${settings.storeName}. All rights reserved.</p>
         </div>
         <div>
           <h4 class="font-bold text-white mb-4 uppercase tracking-wider text-xs">Categories</h4>
@@ -12150,7 +12411,7 @@ export function renderAdminLayout(activeTabId) {
     <!-- Mobile header bar -->
     <div class="md:hidden flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 w-full sticky top-0 z-40">
       <div class="flex flex-col">
-        <span class="text-[#1E6C02] font-black text-xl leading-tight">Aurora Rice Admin</span>
+        <span id="admin-mobile-store-name" class="text-[#1E6C02] font-black text-xl leading-tight">${settings.storeName} Admin</span>
         <span class="text-xs text-black font-semibold tracking-tight">Management Portal</span>
       </div>
       <button id="mobile-sidebar-toggle" class="p-2 text-black hover:text-black focus:outline-none cursor-pointer">
@@ -12164,7 +12425,7 @@ export function renderAdminLayout(activeTabId) {
           <!-- Sidebar Branding Header -->
           <div class="pt-8 pb-6 px-6 flex items-center justify-between">
             <div class="flex flex-col">
-              <span class="text-[#1E6C02] font-black text-2xl leading-tight">Aurora Rice Admin</span>
+              <span id="admin-sidebar-store-name" class="text-[#1E6C02] font-black text-2xl leading-tight">${settings.storeName} Admin</span>
               <span class="text-sm text-black font-semibold mt-1 tracking-tight">Management Portal</span>
             </div>
             <!-- Sidebar Close Trigger -->

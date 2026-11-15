@@ -48,12 +48,12 @@
   <!-- Main Hero and Explanatory Content -->
   <main class="min-h-screen">
     <!-- Hero Section -->
-    <section class="relative bg-gradient-to-br from-[#F5F5F5] to-white py-16 lg:py-24">
+    <section class="relative bg-gradient-to-br from-[#F5F5F5] to-white py-12 sm:py-16 lg:py-24">
       <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div>
             <h1 id="hero-title" class="text-3xl sm:text-4xl lg:text-5xl font-black text-[#111827] dark:text-white mb-6 leading-tight tracking-tight">
-              Aurora Local Rice<br /><span class="text-[#1E6C02]">Online Ordering</span>
+              <span data-store-name>Mahayag Local Rice</span><br /><span class="text-[#1E6C02]">Online Ordering</span>
             </h1>
             <p id="hero-desc" class="text-base lg:text-lg text-[#111827] dark:text-white mb-8 leading-relaxed max-w-xl">
               Order premium quality rice online the easy way. Instantly check available rice stocks, reserve your order in real time when key varieties are out of stock, join the restocking queue, and coordinate flexible store pickup or instant delivery. High-fidelity rice management, crafted just for you.
@@ -63,7 +63,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 w-5 h-5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </a>
           </div>
-          <div class="relative h-[300px] lg:h-[400px] rounded-2xl overflow-hidden shadow-xl">
+          <div class="relative h-[260px] sm:h-[320px] lg:h-[400px] rounded-2xl overflow-hidden shadow-xl">
             <img
               id="hero-image"
               src="https://static.vecteezy.com/system/resources/thumbnails/047/128/443/small/a-bag-of-rice-is-sitting-on-a-wooden-table-with-a-bunch-of-rice-on-the-table-photo.jpg"
@@ -81,7 +81,7 @@
       <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
           <h2 id="why-choose-title" class="text-2xl sm:text-3xl lg:text-4xl font-black text-[#222222] mb-4">
-            Why Choose Aurora Local Rice?
+            Why Choose <span data-store-name>Mahayag Local Rice</span>?
           </h2>
           <p class="text-black text-base max-w-2xl mx-auto font-normal">
             We are committed to providing the ultimate queue-enabled rice ordering and inventory management platform.
@@ -135,7 +135,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             </div>
             <h3 class="text-lg font-bold text-[#222222] mb-2">Community Rated</h3>
-            <p class="text-black text-base leading-relaxed font-normal">Hundreds of families trust Aurora Rice Store for clean grains, fast support, and daily food security.</p>
+            <p class="text-black text-base leading-relaxed font-normal">Hundreds of families trust <span data-store-name>Mahayag Local Rice</span> for clean grains, fast support, and daily food security.</p>
           </div>
         </div>
       </div>
@@ -169,7 +169,7 @@
           </p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-6 lg:gap-8" id="reviews-showcase">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8" id="reviews-showcase">
           <!-- Rendered dynamically by javascript -->
         </div>
 
@@ -182,6 +182,39 @@
     </section>
   </main>
 
+  <!-- Synchronous pre-paint store branding hydration to eliminate first-render flash -->
+  <script>
+    (function() {
+      try {
+        var cloud = {};
+        try {
+          var rawCloud = localStorage.getItem('aurora-store-settings');
+          if (rawCloud) {
+            var parsed = JSON.parse(rawCloud);
+            cloud = Array.isArray(parsed) ? (parsed[0] || {}) : (parsed || {});
+          }
+        } catch (_) {}
+        var storeName = localStorage.getItem('settings-store-name') || cloud.storeName || 'Mahayag Local Rice';
+        var storeDesc = localStorage.getItem('settings-store-description') || cloud.description || '';
+        var storeBanner = localStorage.getItem('settings-store-banner') || cloud.banner || '';
+        if (storeName) {
+          var nodes = document.querySelectorAll('[data-store-name]');
+          for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].textContent !== storeName) nodes[i].textContent = storeName;
+          }
+        }
+        var heroDesc = document.getElementById('hero-desc');
+        if (heroDesc && storeDesc && heroDesc.textContent !== storeDesc) {
+          heroDesc.textContent = storeDesc;
+        }
+        var heroImage = document.getElementById('hero-image');
+        if (heroImage && storeBanner && heroImage.getAttribute('src') !== storeBanner) {
+          heroImage.src = storeBanner;
+        }
+      } catch (_) {}
+    })();
+  </script>
+
   <!-- Dynamic Footer Bar -->
   <div id="footer-container"></div>
 
@@ -190,35 +223,25 @@
 
   <!-- Homepage Dynamic Dynamic Content Loading script -->
   <script type="module">
-    import { getProducts, getReviews, getStoreSettings } from './src/app/shared.js';
+    import { getProducts, getReviews, getStoreSettings, applyStoreBranding } from './src/app/shared.js';
 
-    document.addEventListener('DOMContentLoaded', () => {
+    const initHomepage = () => {
       // 0. Dynamic Store Settings Updates
       function applyStoreSettings() {
         const settings = getStoreSettings();
-        const heroTitle = document.getElementById('hero-title');
-        if (heroTitle) {
-          heroTitle.innerHTML = `${settings.storeName}<br /><span class="text-[#1E6C02]">Online Ordering</span>`;
-        }
+        const brandName = (settings.storeName && String(settings.storeName).trim()) || 'Mahayag Local Rice';
+        applyStoreBranding(settings);
         const heroDesc = document.getElementById('hero-desc');
-        if (heroDesc) {
+        if (heroDesc && settings.description && heroDesc.textContent !== settings.description) {
           heroDesc.textContent = settings.description;
         }
         const heroImage = document.getElementById('hero-image');
-        if (heroImage) {
+        if (heroImage && settings.banner && heroImage.getAttribute('src') !== settings.banner && heroImage.src !== settings.banner) {
           heroImage.src = settings.banner;
         }
         const whyChooseTitle = document.getElementById('why-choose-title');
-        if (whyChooseTitle) {
-          whyChooseTitle.textContent = `Why Choose ${settings.storeName}?`;
-        }
-        const navLogo = document.getElementById('navbar-store-logo');
-        if (navLogo && settings.logo && navLogo.src !== settings.logo) {
-          navLogo.src = settings.logo;
-        }
-        const footLogo = document.getElementById('footer-store-logo');
-        if (footLogo && settings.logo && footLogo.src !== settings.logo) {
-          footLogo.src = settings.logo;
+        if (whyChooseTitle && !whyChooseTitle.querySelector('[data-store-name]')) {
+          whyChooseTitle.textContent = `Why Choose ${brandName}?`;
         }
       }
       applyStoreSettings();
@@ -331,7 +354,13 @@
           renderFeaturedReviews();
         }
       });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initHomepage, { once: true });
+    } else {
+      initHomepage();
+    }
   </script>
 </body>
 </html>

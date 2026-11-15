@@ -34,8 +34,8 @@
   <div id="navbar-container"></div>
 
   <!-- Centered Login Main Content -->
-  <main class="flex-grow flex items-center justify-center p-4 py-12">
-    <div id="login-card" class="w-full max-w-md bg-white p-8 lg:p-12 rounded-[32px] shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-300">
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 py-10 sm:py-12">
+    <div id="login-card" class="w-full max-w-md sm:max-w-[460px] bg-white p-6 sm:p-8 lg:p-10 rounded-[28px] sm:rounded-[32px] shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-300 mx-auto">
       <div class="w-full">
         <!-- Title & Subtitle Header -->
         <div class="mb-8 text-center">
@@ -115,16 +115,16 @@
           </div>
 
           <!-- Remember me & forgotten keys links -->
-          <div class="flex items-center justify-between">
-            <label class="flex items-center space-x-2.5 cursor-pointer select-none text-xs font-bold text-[#222222]">
+          <div class="flex flex-wrap items-center justify-between gap-2.5">
+            <label class="flex items-center space-x-2.5 cursor-pointer select-none text-xs font-bold text-[#222222] whitespace-nowrap">
               <input
                 type="checkbox"
                 id="remember"
-                class="w-4.5 h-4.5 border border-gray-300 rounded text-[#1E6C02] focus:ring-[#1E6C02] cursor-pointer"
+                class="w-4.5 h-4.5 border border-gray-300 rounded text-[#1E6C02] focus:ring-[#1E6C02] cursor-pointer shrink-0"
               />
               <span>Remember for 30 days</span>
             </label>
-            <button type="button" id="btn-forgot-password" class="text-xs text-black dark:text-white hover:text-[#1E6C02] dark:hover:text-[#34D399] font-semibold transition-colors bg-transparent border-0 cursor-pointer">
+            <button type="button" id="btn-forgot-password" class="text-xs text-black dark:text-white hover:text-[#1E6C02] dark:hover:text-[#34D399] font-semibold transition-colors bg-transparent border-0 cursor-pointer whitespace-nowrap">
               forgot password?
             </button>
           </div>
@@ -133,7 +133,7 @@
           <button
             type="submit"
             id="btn-submit"
-            class="w-full h-12 bg-[#1E6C02] hover:bg-[#145001] text-white font-bold rounded-xl shadow-lg shadow-green-900/10 hover:shadow-green-900/20 transition-all cursor-pointer font-bold text-sm tracking-wide"
+            class="w-full h-12 bg-[#1E6C02] hover:bg-[#145001] text-white font-bold rounded-xl shadow-lg shadow-green-900/10 hover:shadow-green-900/20 transition-all cursor-pointer font-bold text-sm tracking-wide whitespace-nowrap flex items-center justify-center"
           >
             Login
           </button>
@@ -154,8 +154,8 @@
   </main>
 
   <!-- Forgot Password Modal dialog -->
-  <div id="forgot-password-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border border-gray-150 transform transition-all scale-95 opacity-0 duration-300" id="forgot-password-content">
+  <div id="forgot-password-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden overflow-hidden" role="dialog" aria-modal="true">
+    <div class="w-[min(calc(100vw-24px),28rem)] max-h-[calc(100dvh-24px)] overflow-y-auto bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-150 transform transition-all scale-95 opacity-0 duration-300 mx-auto" id="forgot-password-content">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6 pb-2 border-b border-gray-100">
         <h3 class="text-xl font-extrabold text-[#222222]">Forgot Password</h3>

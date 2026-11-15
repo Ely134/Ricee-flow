@@ -76,8 +76,7 @@ try {
 
   try {
     db = initializeFirestore(app, {
-      experimentalForceLongPolling: true,
-      useFetchStreams: false,
+      experimentalAutoDetectLongPolling: true,
     }, databaseId);
   } catch (initErr) {
     // If Firestore was already initialized on this app instance, retrieve it safely
@@ -111,15 +110,47 @@ try {
 // Validate connection to Firestore per platform specifications non-blockingly in background
 function testConnection() {
   if (!db || typeof window === 'undefined') return;
-  setTimeout(async () => {
+  let isUnloading = false;
+  const markUnloading = () => { isUnloading = true; };
+  window.addEventListener('pagehide', markUnloading, { once: true });
+  window.addEventListener('beforeunload', markUnloading, { once: true });
+
+  const runProbe = async (attempt = 0) => {
+    if (isUnloading) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
     try {
       await getDocFromServer(doc(db, 'test', 'connection'));
     } catch (error) {
-      if (error instanceof Error && error.message.includes('the client is offline')) {
+      if (isUnloading) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      const errMsg = error instanceof Error ? error.message : String(error || '');
+      if (errMsg.includes('the client is offline')) {
+        if (attempt < 2) {
+          setTimeout(() => runProbe(attempt + 1), (attempt + 1) * 1500);
+          return;
+        }
+        // Confirm via direct Firestore REST reachability before reporting a configuration error
+        try {
+          const projectId = firebaseConfig?.projectId;
+          const dbId = firebaseConfig?.firestoreDatabaseId || '(default)';
+          const apiKey = firebaseConfig?.apiKey;
+          if (projectId && apiKey) {
+            const restUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/${encodeURIComponent(dbId)}/documents/products?pageSize=1&key=${encodeURIComponent(apiKey)}`;
+            const resp = await fetch(restUrl, { method: 'GET' });
+            if (resp.ok || resp.status === 403 || resp.status === 404) {
+              return;
+            }
+          }
+        } catch (_) {
+          // Network unreachable from REST as well; skip false configuration error if offline
+          if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+        }
         console.error("Please check your Firebase configuration.");
       }
     }
-  }, 1000);
+  };
+
+  setTimeout(() => runProbe(0), 1200);
 }
 testConnection();
 
@@ -139,6 +170,9 @@ export async function checkFirebaseReachability(timeoutMs = 4000) {
     await Promise.race([probePromise, timeoutPromise]);
     return { ok: true, reason: 'online' };
   } catch (err) {
+    if (err?.code === 'permission-denied') {
+      return { ok: true, reason: 'online' };
+    }
     const errMsg = String(err?.message || err || '');
     const isOffline = errMsg.includes('the client is offline') || errMsg.includes('failed-precondition') || (typeof navigator !== 'undefined' && !navigator.onLine);
     const isTimeout = errMsg.includes('timed out') || err?.code === 'deadline-exceeded';
@@ -1378,6 +1412,7 @@ export async function syncStoreSettingsFromFirestore() {
       if (s.description !== undefined && s.description !== null) safeLocalStorageSet('settings-store-description', s.description);
       if (s.contactNumber !== undefined && s.contactNumber !== null) safeLocalStorageSet('settings-contact-number', s.contactNumber);
       if (s.contactEmail !== undefined && s.contactEmail !== null) safeLocalStorageSet('settings-contact-email', s.contactEmail);
+      safeLocalStorageSet('settings-support-email', (s.supportEmail !== undefined && s.supportEmail !== null) ? s.supportEmail : '');
       if (s.storeAddress !== undefined && s.storeAddress !== null) safeLocalStorageSet('settings-store-address', s.storeAddress);
       if (s.facebookLink !== undefined && s.facebookLink !== null) safeLocalStorageSet('settings-facebook-link', s.facebookLink);
       if (s.businessHours !== undefined && s.businessHours !== null) safeLocalStorageSet('settings-business-hours', s.businessHours);
@@ -1499,6 +1534,7 @@ export async function initFirestoreSync(force = false) {
             if (s.description !== undefined && s.description !== null) safeLocalStorageSet('settings-store-description', s.description);
             if (s.contactNumber !== undefined && s.contactNumber !== null) safeLocalStorageSet('settings-contact-number', s.contactNumber);
             if (s.contactEmail !== undefined && s.contactEmail !== null) safeLocalStorageSet('settings-contact-email', s.contactEmail);
+            safeLocalStorageSet('settings-support-email', (s.supportEmail !== undefined && s.supportEmail !== null) ? s.supportEmail : '');
             if (s.storeAddress !== undefined && s.storeAddress !== null) safeLocalStorageSet('settings-store-address', s.storeAddress);
             if (s.facebookLink !== undefined && s.facebookLink !== null) safeLocalStorageSet('settings-facebook-link', s.facebookLink);
             if (s.businessHours !== undefined && s.businessHours !== null) safeLocalStorageSet('settings-business-hours', s.businessHours);
@@ -1543,6 +1579,7 @@ export async function initFirestoreSync(force = false) {
             if (s.description !== undefined && s.description !== null) safeLocalStorageSet('settings-store-description', s.description);
             if (s.contactNumber !== undefined && s.contactNumber !== null) safeLocalStorageSet('settings-contact-number', s.contactNumber);
             if (s.contactEmail !== undefined && s.contactEmail !== null) safeLocalStorageSet('settings-contact-email', s.contactEmail);
+            safeLocalStorageSet('settings-support-email', (s.supportEmail !== undefined && s.supportEmail !== null) ? s.supportEmail : '');
             if (s.storeAddress !== undefined && s.storeAddress !== null) safeLocalStorageSet('settings-store-address', s.storeAddress);
             if (s.facebookLink !== undefined && s.facebookLink !== null) safeLocalStorageSet('settings-facebook-link', s.facebookLink);
             if (s.businessHours !== undefined && s.businessHours !== null) safeLocalStorageSet('settings-business-hours', s.businessHours);
@@ -1762,9 +1799,20 @@ export async function initFirestoreSync(force = false) {
 
           // Remote Firestore takes precedence if newer or if local is missing populated profile values
           const remoteIsNewer = remoteTime >= localTime;
-          const localIsEmpty = (!currentLocal.phone && docData.phone) || (!currentLocal.address && (docData.address || docData.shippingAddress));
+          const localIsEmpty = (!currentLocal.phone && docData.phone) ||
+            (!currentLocal.address && (docData.address || docData.shippingAddress)) ||
+            (!currentLocal.addressDetails && docData.addressDetails) ||
+            (!currentLocal.coordinates && docData.coordinates);
 
           if (remoteIsNewer || localIsEmpty) {
+            const nextAddress = docData.address || docData.shippingAddress || currentLocal.address || '';
+            const nextCoords = (docData.coordinates && typeof docData.coordinates === 'object' && !isNaN(Number(docData.coordinates.lat)) && !isNaN(Number(docData.coordinates.lng)))
+              ? { lat: Number(docData.coordinates.lat), lng: Number(docData.coordinates.lng) }
+              : (remoteIsNewer && docData.coordinates === null ? null : (currentLocal.coordinates || null));
+            const nextAddressDetails = (docData.addressDetails && typeof docData.addressDetails === 'object')
+              ? docData.addressDetails
+              : (remoteIsNewer && docData.addressDetails === null ? null : (currentLocal.addressDetails || null));
+
             const merged = {
               ...currentLocal,
               ...docData,
@@ -1773,7 +1821,10 @@ export async function initFirestoreSync(force = false) {
               phone: docData.phone || currentLocal.phone || '',
               phoneE164: docData.phoneE164 || currentLocal.phoneE164 || '',
               phoneVerified: docData.phoneVerified ?? (currentLocal.phoneVerified ?? false),
-              address: docData.address || docData.shippingAddress || currentLocal.address || '',
+              address: nextAddress,
+              shippingAddress: nextAddress,
+              coordinates: nextCoords,
+              addressDetails: nextAddressDetails,
               gender: docData.gender || currentLocal.gender || 'Female',
               profilePicture: docData.profilePicture || currentLocal.profilePicture || null,
               updatedAt: docData.updatedAt || currentLocal.updatedAt || new Date().toISOString()
@@ -1804,22 +1855,28 @@ export async function initFirestoreSync(force = false) {
         }
       };
 
-      // Listen on users collection by ID
-      if (custProfileLocalId) {
+      // Listen on users collection by ID and Firebase UID
+      const listenedUserDocIds = new Set();
+      [custProfileLocalId, custProfileUid, custProfileUid ? `user-${custProfileUid}` : ''].filter(Boolean).forEach(docId => {
+        if (listenedUserDocIds.has(docId)) return;
+        listenedUserDocIds.add(docId);
         try {
-          onSnapshot(doc(db, 'users', custProfileLocalId), snap => {
+          onSnapshot(doc(db, 'users', docId), snap => {
             if (snap.exists()) applyAuthoritativeProfile(snap.data());
           }, err => console.warn('[FIREBASE] User profile listener error:', err.message));
         } catch (_) {}
-      }
-      // Listen on customers collection by ID
-      if (custProfileLocalId) {
+      });
+      // Listen on customers collection by ID and Firebase UID
+      const listenedCustDocIds = new Set();
+      [custProfileLocalId, custProfileUid].filter(Boolean).forEach(docId => {
+        if (listenedCustDocIds.has(docId)) return;
+        listenedCustDocIds.add(docId);
         try {
-          onSnapshot(doc(db, 'customers', custProfileLocalId), snap => {
+          onSnapshot(doc(db, 'customers', docId), snap => {
             if (snap.exists()) applyAuthoritativeProfile(snap.data());
           }, err => console.warn('[FIREBASE] Customer profile listener error:', err.message));
         } catch (_) {}
-      }
+      });
     }
   }
   })();
@@ -2179,9 +2236,15 @@ export async function checkCustomerArchivedInFirestore(email, firebaseUid) {
 export async function fetchCustomerProfileFromFirestore(email, firebaseUid, userId) {
   if (!db) return null;
 
-  const cleanEmail = String(email || '').trim().toLowerCase();
-  const cleanUid = String(firebaseUid || '').trim();
+  if (auth && typeof auth.authStateReady === 'function') {
+    try { await auth.authStateReady(); } catch (_) {}
+  }
+
+  const cleanEmail = String(email || auth?.currentUser?.email || '').trim().toLowerCase();
+  const cleanUid = String(firebaseUid || auth?.currentUser?.uid || '').trim();
   const cleanUserId = String(userId || '').trim();
+
+  if (!cleanEmail && !cleanUid && !cleanUserId) return null;
 
   try {
     const candidateDocs = [];
@@ -2245,7 +2308,7 @@ export async function fetchCustomerProfileFromFirestore(email, firebaseUid, user
 
     if (candidateDocs.length === 0) return null;
 
-    // Sort candidates by updatedAt descending
+    // Sort candidates by updatedAt descending (newest authoritative write first)
     const sorted = candidateDocs.sort((a, b) => {
       const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
       const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
@@ -2268,6 +2331,8 @@ export async function fetchCustomerProfileFromFirestore(email, firebaseUid, user
     let phoneE164 = '';
     let phoneVerified = false;
     let address = '';
+    let coordinates = null;
+    let addressDetails = null;
     let gender = '';
     let profilePicture = null;
     let emailVal = cleanEmail;
@@ -2288,14 +2353,25 @@ export async function fetchCustomerProfileFromFirestore(email, firebaseUid, user
       if (!phone && docItem.phone) phone = docItem.phone;
       if (!phoneE164 && docItem.phoneE164) phoneE164 = docItem.phoneE164;
       if (docItem.phoneVerified === true) phoneVerified = true;
-      if (!address && (docItem.address || docItem.shippingAddress)) {
-        address = docItem.address || docItem.shippingAddress;
+
+      const docAddr = String(docItem.address || docItem.shippingAddress || '').trim();
+      if (!address && docAddr) {
+        address = docAddr;
       }
-      if (!coordinates && docItem.coordinates && typeof docItem.coordinates === 'object' && !isNaN(Number(docItem.coordinates.lat)) && !isNaN(Number(docItem.coordinates.lng))) {
-        coordinates = { lat: Number(docItem.coordinates.lat), lng: Number(docItem.coordinates.lng) };
-      } else if (!coordinates && !isNaN(Number(docItem.latitude)) && !isNaN(Number(docItem.longitude))) {
-        coordinates = { lat: Number(docItem.latitude), lng: Number(docItem.longitude) };
+
+      // Only pair coordinates / addressDetails if we don't have them yet AND this doc matches the winning address (or no address yet)
+      const docMatchesAddress = !address || !docAddr || docAddr === address;
+      if (docMatchesAddress) {
+        if (!coordinates && docItem.coordinates && typeof docItem.coordinates === 'object' && !isNaN(Number(docItem.coordinates.lat)) && !isNaN(Number(docItem.coordinates.lng))) {
+          coordinates = { lat: Number(docItem.coordinates.lat), lng: Number(docItem.coordinates.lng) };
+        } else if (!coordinates && docItem.latitude !== undefined && docItem.longitude !== undefined && !isNaN(Number(docItem.latitude)) && !isNaN(Number(docItem.longitude))) {
+          coordinates = { lat: Number(docItem.latitude), lng: Number(docItem.longitude) };
+        }
+        if (!addressDetails && docItem.addressDetails && typeof docItem.addressDetails === 'object') {
+          addressDetails = docItem.addressDetails;
+        }
       }
+
       if (!gender && docItem.gender) gender = docItem.gender;
       if (!profilePicture && docItem.profilePicture) profilePicture = docItem.profilePicture;
       if (!emailVal && docItem.email) emailVal = String(docItem.email).trim().toLowerCase();
@@ -2331,6 +2407,7 @@ export async function fetchCustomerProfileFromFirestore(email, firebaseUid, user
       address,
       shippingAddress: address,
       coordinates: coordinates || null,
+      addressDetails: addressDetails || null,
       gender,
       profilePicture,
       totalSpent,
@@ -2353,9 +2430,17 @@ export async function saveCustomerProfileToFirestore(profileData) {
     throw new Error('Database is not initialized.');
   }
 
-  const cleanEmail = String(profileData.email || '').trim().toLowerCase();
-  const cleanUid = String(profileData.firebaseUid || profileData.uid || '').trim();
-  const cleanId = String(profileData.id || '').trim();
+  if (auth && typeof auth.authStateReady === 'function') {
+    try { await auth.authStateReady(); } catch (_) {}
+  }
+
+  if (auth && !auth.currentUser) {
+    throw new Error('Authentication session is required to save profile changes.');
+  }
+
+  const cleanEmail = String(profileData.email || auth?.currentUser?.email || '').trim().toLowerCase();
+  const cleanUid = String(profileData.firebaseUid || profileData.uid || auth?.currentUser?.uid || '').trim();
+  const cleanId = String(profileData.id || (cleanUid ? `user-${cleanUid}` : '')).trim();
 
   if (!cleanEmail && !cleanUid && !cleanId) {
     throw new Error('Cannot save profile without a valid user identifier.');
@@ -2381,6 +2466,7 @@ export async function saveCustomerProfileToFirestore(profileData) {
     phoneE164: profileData.phoneE164 || '',
     phoneVerified: profileData.phoneVerified ?? false,
     address: profileData.address || profileData.shippingAddress || '',
+    shippingAddress: profileData.address || profileData.shippingAddress || '',
     coordinates: validCoordinates,
     addressDetails: profileData.addressDetails || null,
     gender: profileData.gender || 'Female',
@@ -2392,7 +2478,8 @@ export async function saveCustomerProfileToFirestore(profileData) {
   const customerPayload = {
     id: cleanId,
     customerId: profileData.customerId || undefined,
-    uid: cleanUid || undefined,
+    uid: cleanUid || cleanId || undefined,
+    firebaseUid: cleanUid || undefined,
     email: cleanEmail,
     fullName: profileData.fullName || profileData.name || '',
     name: profileData.fullName || profileData.name || '',
@@ -2414,18 +2501,54 @@ export async function saveCustomerProfileToFirestore(profileData) {
 
   const writePromises = [];
 
-  // Write to users collection
+  // Write to users collection (by canonical ID and Firebase UID aliases)
   if (cleanId) {
     writePromises.push(setDoc(doc(db, 'users', cleanId), cleanUserObj, { merge: true }));
   }
   if (cleanUid && cleanUid !== cleanId) {
     writePromises.push(setDoc(doc(db, 'users', cleanUid), cleanUserObj, { merge: true }));
-    writePromises.push(setDoc(doc(db, 'users', `user-${cleanUid}`), cleanUserObj, { merge: true }));
+    if (`user-${cleanUid}` !== cleanId) {
+      writePromises.push(setDoc(doc(db, 'users', `user-${cleanUid}`), cleanUserObj, { merge: true }));
+    }
   }
 
-  // Write to customers collection (using canonical document ID)
-  if (cleanId) {
-    writePromises.push(setDoc(doc(db, 'customers', cleanId), cleanCustObj, { merge: true }));
+  // Update existing customer record(s) without creating duplicates
+  let updatedExistingCust = false;
+  try {
+    const custMatches = new Map();
+    if (cleanId) {
+      const directSnap = await getDoc(doc(db, 'customers', cleanId)).catch(() => null);
+      if (directSnap && directSnap.exists()) {
+        custMatches.set(directSnap.id, directSnap.ref);
+      }
+    }
+    if (cleanUid) {
+      const uidSnaps = await getDocs(query(collection(db, 'customers'), where('uid', '==', cleanUid))).catch(() => null);
+      if (uidSnaps) uidSnaps.forEach(d => custMatches.set(d.id, d.ref));
+      const fbUidSnaps = await getDocs(query(collection(db, 'customers'), where('firebaseUid', '==', cleanUid))).catch(() => null);
+      if (fbUidSnaps) fbUidSnaps.forEach(d => custMatches.set(d.id, d.ref));
+    }
+    if (cleanEmail) {
+      const emailSnaps = await getDocs(query(collection(db, 'customers'), where('email', '==', cleanEmail))).catch(() => null);
+      if (emailSnaps) emailSnaps.forEach(d => custMatches.set(d.id, d.ref));
+    }
+    if (custMatches.size > 0) {
+      custMatches.forEach((docRef) => {
+        writePromises.push(setDoc(docRef, cleanCustObj, { merge: true }));
+      });
+      updatedExistingCust = true;
+    }
+  } catch (lookupErr) {
+    console.warn('[FIREBASE] Customer lookup notice during profile save:', lookupErr?.message);
+  }
+
+  if (!updatedExistingCust && (cleanId || cleanUid)) {
+    const targetCustDocId = cleanId || `user-${cleanUid}`;
+    writePromises.push(setDoc(doc(db, 'customers', targetCustDocId), cleanCustObj, { merge: true }));
+  }
+
+  if (writePromises.length === 0) {
+    throw new Error('No Firestore target documents resolved for profile save.');
   }
 
   // Await ALL Firestore writes!

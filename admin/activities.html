@@ -316,6 +316,14 @@
     }
   </style>
   <style id="auth-guard-style">body { visibility: hidden !important; }</style>
+  <style id="riceflow-activities-responsive-css">
+    #admin-main-content, #admin-main-content * { min-width: 0; }
+    @media (max-width: 1023px) {
+      #admin-main-content { padding: 14px 12px !important; }
+      #admin-layout-container > #admin-right-workspace > header { min-height: 68px; height: auto; padding: 12px 16px; }
+      #admin-layout-container > #admin-right-workspace > header h2 { font-size: 21px !important; line-height: 1.25 !important; }
+    }
+  </style>
 </head>
 <body class="bg-[#F5F5F5] min-h-screen text-black">
   <div id="auth-guard-loader" class="fixed inset-0 bg-[#F5F5F5] z-[99999] flex flex-col items-center justify-center font-sans">
@@ -553,8 +561,8 @@
           <div class="space-y-6">
             
             <!-- Filters workspace card -->
-            <div class="bg-white rounded-3xl p-6 border border-gray-200 shadow-sm flex flex-col space-y-4">
-              <div class="flex flex-col md:flex-row items-end gap-6">
+            <div class="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200 shadow-sm flex flex-col space-y-4">
+              <div class="flex flex-col md:flex-row items-stretch md:items-end gap-4 sm:gap-6">
                 <!-- Search text input -->
                 <div class="w-full md:flex-1 relative">
                   <span class="absolute left-4 top-1/2 -translate-y-1/2 text-black">
@@ -565,15 +573,15 @@
                     id="inp-search-logs" 
                     value="${searchQuery}" 
                     placeholder="Search by user, action, or target..." 
-                    class="w-full bg-[#F3F4F6] border border-transparent text-[16px] font-normal text-black pl-12 pr-4 py-3.5 rounded-2xl outline-none focus:border-[#1E6C02] focus:bg-white transition-all placeholder-gray-500"
+                    class="w-full min-h-[46px] bg-[#F3F4F6] border border-transparent text-[15px] sm:text-[16px] font-normal text-black pl-12 pr-4 py-3 rounded-2xl outline-none focus:border-[#1E6C02] focus:bg-white transition-all placeholder-gray-500"
                   />
                 </div>
 
                 <!-- Category select -->
-                <div class="w-full md:w-64 flex flex-col gap-2">
+                <div class="w-full md:w-56 lg:w-64 flex flex-col gap-1.5 sm:gap-2">
                   <span class="filter-label-text text-xs font-bold text-black uppercase tracking-wider">Category</span>
                   <div class="relative">
-                    <select id="sel-logs-category" class="w-full bg-white border border-gray-300 text-[16px] font-normal text-black pl-4 pr-10 py-3.5 rounded-2xl outline-none cursor-pointer focus:border-[#1E6C02] transition-all appearance-none">
+                    <select id="sel-logs-category" class="w-full min-h-[46px] bg-white border border-gray-300 text-[15px] sm:text-[16px] font-normal text-black pl-4 pr-10 py-3 rounded-2xl outline-none cursor-pointer focus:border-[#1E6C02] transition-all appearance-none">
                       <option value="all" ${categoryFilter === 'all' ? 'selected' : ''}>All Categories</option>
                       <option value="Inventory" ${categoryFilter === 'Inventory' ? 'selected' : ''}>Inventory</option>
                       <option value="Orders" ${categoryFilter === 'Orders' ? 'selected' : ''}>Orders</option>
@@ -591,10 +599,10 @@
                 </div>
 
                 <!-- Time Period select -->
-                <div class="w-full md:w-64 flex flex-col gap-2">
+                <div class="w-full md:w-56 lg:w-64 flex flex-col gap-1.5 sm:gap-2">
                   <span class="filter-label-text text-xs font-bold text-black uppercase tracking-wider">Time Period</span>
                   <div class="relative">
-                    <select id="sel-logs-period" class="w-full bg-white border border-gray-300 text-[16px] font-normal text-black pl-4 pr-10 py-3.5 rounded-2xl outline-none cursor-pointer focus:border-[#1E6C02] transition-all appearance-none">
+                    <select id="sel-logs-period" class="w-full min-h-[46px] bg-white border border-gray-300 text-[15px] sm:text-[16px] font-normal text-black pl-4 pr-10 py-3 rounded-2xl outline-none cursor-pointer focus:border-[#1E6C02] transition-all appearance-none">
                       <option value="all" ${timeFilter === 'all' ? 'selected' : ''}>All Time</option>
                       <option value="today" ${timeFilter === 'today' ? 'selected' : ''}>Today</option>
                       <option value="week" ${timeFilter === 'week' ? 'selected' : ''}>This Week</option>
@@ -620,7 +628,7 @@
             </div>
 
             <!-- Stats indicators grids (Summary Cards) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5 lg:gap-6">
               <!-- Today's Actions -->
               <div class="bg-white border border-gray-200 rounded-[20px] p-5 flex items-center gap-4.5 shadow-sm hover:shadow-md transition-all duration-300">
                 <div class="bg-blue-50 text-blue-600 w-14 h-14 flex items-center justify-center rounded-[16px] border border-blue-100 shrink-0">
@@ -675,13 +683,77 @@
             </div>
 
             <!-- Active Records visual board -->
-            <div class="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm space-y-6">
-              <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+            <div class="bg-white rounded-3xl border border-gray-200 p-4 sm:p-6 lg:p-8 shadow-sm space-y-5 sm:space-y-6">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 pb-4 border-b border-gray-100">
                 <h3 class="text-xl font-bold text-black tracking-tight">Recent Activity Logs</h3>
-                <span class="text-[16px] text-black font-normal" id="logs-counter-text">${counterText}</span>
+                <span class="text-sm sm:text-[16px] text-black font-normal" id="logs-counter-text">${counterText}</span>
               </div>
 
-              <div class="relative">
+              <!-- Mobile & Tablet Activity Log Cards -->
+              <div class="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                ${paginatedLogs.map(log => {
+                  let userName = String(log.userName || 'Admin User').trim();
+                  let userRole = String(log.userRole || 'admin').trim();
+                  let category = String(log.category || 'System').trim();
+                  let action = String(log.action || '').trim();
+                  let target = String(log.target || '').trim();
+
+                  if (category === 'Users') category = 'User Management';
+                  if (category === 'Settings') category = 'System';
+
+                  if (userName === '[object Object]' || userName === 'undefined' || !userName) userName = 'Admin User';
+                  if (userRole === '[object Object]' || userRole === 'undefined' || !userRole) userRole = 'admin';
+                  if (category === '[object Object]' || category === 'undefined' || !category) category = 'System';
+                  if (action === '[object Object]' || action === 'undefined' || !action) action = 'Performed system action';
+                  if (target === '[object Object]' || target === 'undefined') target = '';
+
+                  const badgeClass = categoryColors[category] || 'bg-gray-50 text-gray-700 border-gray-200';
+                  const roleBadgeClass = String(userRole || '').toLowerCase() === 'admin'
+                    ? 'bg-purple-100 text-black border border-purple-300'
+                    : 'bg-blue-100 text-black border border-blue-300';
+
+                  return `
+                    <div class="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 p-4 shadow-2xs flex flex-col justify-between gap-3 text-left">
+                      <div class="space-y-2.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                          <div class="inline-flex items-center gap-1.5 text-black dark:text-gray-200">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="activity-timestamp text-[13.5px] font-medium">${formatTimestamp(log.timestamp)}</span>
+                          </div>
+                          <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border shrink-0 ${badgeClass}">
+                            ${category}
+                          </span>
+                        </div>
+
+                        <p class="activity-action-desc text-[15px] text-black dark:text-gray-100 font-normal leading-relaxed break-words">
+                          ${action}
+                        </p>
+                      </div>
+
+                      <div class="pt-2.5 border-t border-gray-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-center gap-2 min-w-0">
+                          <span class="activity-user-name font-semibold text-black dark:text-white text-[14.5px] leading-tight break-words">${userName}</span>
+                          <span class="px-2.5 py-0.5 rounded text-[10.5px] font-bold uppercase tracking-wider shrink-0 ${roleBadgeClass}">
+                            ${userRole}
+                          </span>
+                        </div>
+                        ${target ? `
+                          <span class="activity-target-code px-2.5 py-1 rounded-lg bg-gray-100 text-black border border-gray-300 font-mono text-xs font-semibold break-all">${target}</span>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+
+                ${paginatedLogs.length === 0 ? `
+                  <div class="md:col-span-2 py-12 text-center text-black font-bold text-[16px]">
+                    No records match selected filters.
+                  </div>
+                ` : ''}
+              </div>
+
+              <!-- Desktop Table -->
+              <div class="relative hidden lg:block">
                 <div id="table-scroll-container" class="overflow-x-auto hide-scrollbar rounded-2xl border border-gray-200/80">
                   <table id="activity-logs-table" class="w-full border-collapse min-w-[950px]">
                     <thead>
@@ -773,15 +845,15 @@
               </div>
 
               <!-- Pagination controls container -->
-              <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-100">
-                <div class="text-sm font-semibold text-black">
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 sm:pt-6 border-t border-gray-100">
+                <div class="text-sm font-semibold text-black text-center sm:text-left">
                   ${counterText}
                 </div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-center">
                   <button 
                     id="btn-prev-page" 
                     ${currentPage <= 1 ? 'disabled' : ''} 
-                    class="px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-bold text-black bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
+                    class="min-h-[40px] px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-bold text-black bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
                     Previous
                   </button>
@@ -791,7 +863,7 @@
                   <button 
                     id="btn-next-page" 
                     ${currentPage >= totalPages || totalLogs === 0 ? 'disabled' : ''} 
-                    class="px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-bold text-black bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
+                    class="min-h-[40px] px-3.5 py-2 rounded-xl border border-gray-200 text-sm font-bold text-black bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1">
                     Next
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
                   </button>

@@ -550,13 +550,39 @@ export async function protectCustomerPage() {
         if (localStorage.getItem('aurora-logged-in') !== 'true') {
           return;
         }
-        const activeUser = {
-          ...localUser,
+        const latestLocalRaw = localStorage.getItem('aurora-user');
+        let latestLocal = localUser;
+        try {
+          if (latestLocalRaw) latestLocal = JSON.parse(latestLocalRaw);
+        } catch (_) {}
+
+        const remoteTime = result.user?.updatedAt ? new Date(result.user.updatedAt).getTime() : 0;
+        const localTime = latestLocal?.updatedAt ? new Date(latestLocal.updatedAt).getTime() : 0;
+        const remoteIsNewerOrLocalMissing = remoteTime >= localTime ||
+          (!latestLocal?.address && Boolean(result.user?.address)) ||
+          (!latestLocal?.addressDetails && Boolean(result.user?.addressDetails)) ||
+          (!latestLocal?.coordinates && Boolean(result.user?.coordinates));
+
+        const activeUser = remoteIsNewerOrLocalMissing ? {
+          ...latestLocal,
           ...result.user,
-          firebaseUid: auth?.currentUser?.uid || localUser.firebaseUid,
-          email: (result.user.email || auth?.currentUser?.email || localUser.email || '').toLowerCase().trim()
+          firebaseUid: auth?.currentUser?.uid || result.user?.firebaseUid || latestLocal?.firebaseUid || null,
+          email: (result.user?.email || auth?.currentUser?.email || latestLocal?.email || '').toLowerCase().trim()
+        } : {
+          ...result.user,
+          ...latestLocal,
+          firebaseUid: auth?.currentUser?.uid || latestLocal?.firebaseUid || result.user?.firebaseUid || null,
+          email: (latestLocal?.email || result.user?.email || auth?.currentUser?.email || '').toLowerCase().trim()
         };
-        localStorage.setItem('aurora-user', JSON.stringify(activeUser));
+
+        const prevJson = JSON.stringify(latestLocal);
+        const nextJson = JSON.stringify(activeUser);
+        if (prevJson !== nextJson) {
+          localStorage.setItem('aurora-user', nextJson);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('aurora-sync-event', { detail: { key: 'aurora-user', remote: true } }));
+          }
+        }
         localStorage.setItem('aurora-logged-in', 'true');
       }
     }).catch(err => {
@@ -637,14 +663,42 @@ export function revealProtectedPage() {
         } catch (_) {}
       }
 
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const bodyEl = document.body;
+      if (bodyEl && !prefersReducedMotion) {
+        bodyEl.style.opacity = '0';
+      }
+
       const loaderEl = document.getElementById('auth-guard-loader');
       if (loaderEl) loaderEl.remove();
 
       const styleEl = document.getElementById('auth-guard-style');
       if (styleEl) styleEl.remove();
 
-      if (document.body) {
-        document.body.style.visibility = 'visible';
+      if (bodyEl) {
+        bodyEl.style.visibility = 'visible';
+        if (!prefersReducedMotion) {
+          void bodyEl.offsetHeight;
+          const runFadeIn = () => {
+            bodyEl.style.transition = 'opacity 160ms cubic-bezier(0.22, 1, 0.36, 1)';
+            bodyEl.style.opacity = '1';
+            setTimeout(() => {
+              if (document.body) {
+                document.body.style.transition = '';
+                document.body.style.opacity = '';
+              }
+            }, 220);
+          };
+          if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(runFadeIn);
+          } else {
+            runFadeIn();
+          }
+        }
       }
     } catch (_) {}
   };

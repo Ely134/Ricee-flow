@@ -66,10 +66,12 @@
                 <!-- Mail Icon -->
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
               </div>
-              <div>
+              <div class="min-w-0">
                 <h3 class="text-base font-black text-[#111827] dark:text-white mb-1">Email</h3>
-                <a href="mailto:info@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">info@auroralocalrice.com</a>
-                <a href="mailto:support@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">support@auroralocalrice.com</a>
+                <div id="info-emails">
+                  <a id="info-email-primary" href="mailto:info@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">info@auroralocalrice.com</a>
+                  <a id="info-email-secondary" href="mailto:support@auroralocalrice.com" class="text-sm text-[#111827] dark:text-white hover:text-[#1E6C02] font-bold block leading-relaxed transition-colors break-all">support@auroralocalrice.com</a>
+                </div>
               </div>
             </div>
 
@@ -278,35 +280,74 @@
         }
       }
 
-      // Load dynamic store settings
-      const settings = getStoreSettings();
-      
-      const phoneEl = document.getElementById('info-phone');
-      if (phoneEl) {
-        phoneEl.textContent = settings.contactNumber;
-      }
+      // Load and live-sync dynamic store settings for Get in Touch
+      function renderContactSettings() {
+        const settings = getStoreSettings();
 
-      const addressEl = document.getElementById('info-address');
-      if (addressEl) {
-        addressEl.textContent = settings.storeAddress;
-      }
+        const phoneEl = document.getElementById('info-phone');
+        if (phoneEl) {
+          phoneEl.textContent = settings.contactNumber || '';
+        }
 
-      const hoursEl = document.getElementById('info-hours');
-      if (hoursEl) {
-        hoursEl.textContent = settings.businessHours || 'None';
-      }
+        const primaryEmail = String(settings.contactEmail || '').trim();
+        const secondaryEmail = String(settings.supportEmail || '').trim();
+        const primaryEmailEl = document.getElementById('info-email-primary');
+        const secondaryEmailEl = document.getElementById('info-email-secondary');
 
-      const fbContainer = document.getElementById('info-facebook-container');
-      const fbLink = document.getElementById('info-facebook');
-      if (fbContainer && fbLink) {
-        if (settings.facebookLink) {
-          fbLink.href = settings.facebookLink;
-          fbLink.textContent = settings.facebookLink;
-          fbContainer.classList.remove('hidden');
-        } else {
-          fbContainer.classList.add('hidden');
+        if (primaryEmailEl) {
+          if (primaryEmail) {
+            primaryEmailEl.href = `mailto:${primaryEmail}`;
+            primaryEmailEl.textContent = primaryEmail;
+            primaryEmailEl.classList.remove('hidden');
+          } else {
+            primaryEmailEl.classList.add('hidden');
+          }
+        }
+
+        if (secondaryEmailEl) {
+          if (secondaryEmail && secondaryEmail.toLowerCase() !== primaryEmail.toLowerCase()) {
+            secondaryEmailEl.href = `mailto:${secondaryEmail}`;
+            secondaryEmailEl.textContent = secondaryEmail;
+            secondaryEmailEl.classList.remove('hidden');
+          } else {
+            secondaryEmailEl.classList.add('hidden');
+          }
+        }
+
+        const addressEl = document.getElementById('info-address');
+        if (addressEl) {
+          addressEl.textContent = settings.storeAddress || '';
+        }
+
+        const hoursEl = document.getElementById('info-hours');
+        if (hoursEl) {
+          const hrs = String(settings.businessHours || '').trim();
+          const days = String(settings.operatingDays || '').trim();
+          const scheduleText = (hrs && days)
+            ? (hrs.toLowerCase().includes(days.toLowerCase()) ? hrs : `${hrs} (${days})`)
+            : (hrs || days || 'None');
+          hoursEl.textContent = scheduleText;
+        }
+
+        const fbContainer = document.getElementById('info-facebook-container');
+        const fbLink = document.getElementById('info-facebook');
+        if (fbContainer && fbLink) {
+          if (settings.facebookLink) {
+            fbLink.href = settings.facebookLink;
+            fbLink.textContent = settings.facebookLink;
+            fbContainer.classList.remove('hidden');
+          } else {
+            fbContainer.classList.add('hidden');
+          }
         }
       }
+
+      renderContactSettings();
+      window.addEventListener('aurora-sync-event', (e) => {
+        if (!e?.detail?.key || e.detail.key === 'aurora-store-settings') {
+          renderContactSettings();
+        }
+      });
 
       const form = document.getElementById('form-contact');
       const submitBtn = document.getElementById('btn-submit');
